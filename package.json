@@ -1,0 +1,23 @@
+{
+  "name": "naebu",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-stringify": "^6.6.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.22.1",
+    "express-session": "^1.18.2",
+    "json2csv": "^6.0.0-alpha.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.8",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
+  }
+}
