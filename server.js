@@ -4,12 +4,17 @@ const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
 const session = require('express-session');
-
+const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ----------------- 환경 변수 -----------------
 const ADMIN_PW = process.env.ADMIN_PW || '1234';
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET','POST'],
+}));
 
 // ----------------- 세션 설정 -----------------
 app.use(session({
@@ -26,8 +31,8 @@ const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(console.error);
 
 // ----------------- 정적 파일 -----------------
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(UPLOAD_DIR));
 
 // ----------------- multer 설정 -----------------
 const storage = multer.diskStorage({
