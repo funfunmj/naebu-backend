@@ -26,8 +26,8 @@ const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(console.error);
 
 // ----------------- 정적 파일 -----------------
-app.use('/uploads', express.static(UPLOAD_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // ----------------- multer 설정 -----------------
 const storage = multer.diskStorage({
