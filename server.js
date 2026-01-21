@@ -28,8 +28,8 @@ app.use(session({
 app.use(express.json());
 
 // ----------------- 업로드 폴더 -----------------
-
-fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(console.error);
+fs.mkdir(UPLOAD_DIR, { recursive: true })
+  .catch(err => console.error('uploads 폴더 생성 실패:', err));
 
 // ----------------- 정적 파일 -----------------
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
