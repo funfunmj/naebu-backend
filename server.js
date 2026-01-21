@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const session = require('express-session');
 const cors = require('cors');
+const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
