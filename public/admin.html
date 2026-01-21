@@ -5,6 +5,11 @@
 <title>NAEBU ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- ================= API BASE ================= -->
+<script>
+const API_BASE = 'https://naebu-backend.onrender.com';
+</script>
+
 <style>
 /* ================= CSS 변수 ================= */
 :root {
@@ -144,11 +149,14 @@ let darkMode = true;
 const root = document.documentElement;
 
 /* ================== 로그인 체크 & 세션 대응 ================== */
-fetch('/admin/check').then(r=>r.json()).then(d=>{if(d.ok) showAdmin()});
+fetch(API_BASE + '/admin/check', { credentials:'include' })
+  .then(r=>r.json())
+  .then(d=>{ if(d.ok) showAdmin(); });
 
 function login(){
-  fetch('/admin/login',{
+  fetch(API_BASE + '/admin/login',{
     method:'POST',
+    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({password:pw.value})
   }).then(r=>r.json()).then(d=>{
@@ -158,7 +166,8 @@ function login(){
 }
 
 function logout(){
-  fetch('/admin/logout',{method:'POST'}).then(()=>location.reload());
+  fetch(API_BASE + '/admin/logout',{ method:'POST', credentials:'include' })
+    .then(()=>location.reload());
 }
 
 function showAdmin(){
@@ -169,7 +178,7 @@ function showAdmin(){
 
 /* ================== 전체 로드 ================== */
 function loadAll(){
-  fetch('/content').then(r=>r.json()).then(d=>{
+  fetch(API_BASE + '/content',{ credentials:'include'}).then(r=>r.json()).then(d=>{
     DATA=d;
     intro.value=d.intro||'';
     SLIDES=d.slides||[];
@@ -178,7 +187,7 @@ function loadAll(){
     renderPortfolio();
   });
 
-  fetch('/estimates').then(r=>r.json()).then(d=>{
+  fetch(API_BASE +'/estimates',{credentials:'include'}).then(r=>r.json()).then(d=>{
     ESTIMATES=d;
     applyFilter();
     loadStats();
@@ -187,7 +196,7 @@ function loadAll(){
 
 /* ================== 통계 ================== */
 function loadStats(){
-  fetch('/estimates/stats').then(r=>r.json()).then(d=>{
+  fetch(API_BASE +'/estimates/stats',{ credentials:'include'}).then(r=>r.json()).then(d=>{
     sToday.innerText=d.today||0;
     sMonth.innerText=d.month||0;
     sWait.innerText=d.status['대기']||0;
@@ -218,7 +227,7 @@ function renderSlides(){
 function removeSlide(i,f){
   if(confirm('삭제하시겠습니까?')){
     SLIDES.splice(i,1);
-    fetch('/upload/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f})});
+    fetch(API_BASE +'/upload/delete',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f})});
     renderSlides();
   }
 }
@@ -235,7 +244,7 @@ function renderPortfolio(){
 function removePortfolio(i,f){
   if(confirm('삭제하시겠습니까?')){
     PORTFOLIO.splice(i,1);
-    fetch('/upload/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f})});
+    fetch(API_BASE +'/upload/delete',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f})});
     renderPortfolio();
   }
 }
@@ -245,7 +254,7 @@ function uploadImage(input,type){
   const files = Array.from(input.files); if(!files.length) return;
   const fd = new FormData(); files.forEach(f=>fd.append('image',f));
 
-  fetch('/upload',{method:'POST',body:fd})
+  fetch(API_BASE +'/upload',{method:'POST',credentials:'include',body:fd})
     .then(r=>r.json())
     .then(d=>{
       if(type==='slides'){SLIDES.push(...d.filenames); renderSlides();}
@@ -256,8 +265,9 @@ function uploadImage(input,type){
 
 /* ================== 저장 ================== */
 function saveContent(){
-  fetch('/content',{
+  fetch(API_BASE +'/content',{
     method:'POST',
+    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({intro:intro.value,slideInterval:4500,slides:SLIDES,portfolioImages:PORTFOLIO})
   }).then(()=>alert('저장 완료'));
@@ -285,11 +295,11 @@ function openDetail(id){
   CURRENT_DETAIL=e;
   detailBody.innerHTML=`<b>이름:</b> ${e.name}<br><b>연락처:</b> ${e.phone}<br><b>공간:</b> ${e.space}<br><br>${e.message||''}`;
   memoInput.value=e.memo||''; detailPopup.style.display='flex';
-  if(e.read===0) fetch('/estimate/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:e.id})}).then(loadAll);
+  if(e.read===0) fetch(API_BASE +'/estimate/read',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:e.id})}).then(loadAll);
 }
-function saveMemo(){if(!CURRENT_DETAIL) return; fetch('/estimate/memo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CURRENT_DETAIL.id,memo:memoInput.value})}).then(()=>{detailPopup.style.display='none';loadAll();});}
-function setStatus(id,status){fetch('/estimate/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(loadAll);}
-function delEstimate(id){fetch('/estimate/'+id,{method:'DELETE'}).then(loadAll);}
+function saveMemo(){if(!CURRENT_DETAIL) return; fetch(API_BASE +'/estimate/memo',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CURRENT_DETAIL.id,memo:memoInput.value})}).then(()=>{detailPopup.style.display='none';loadAll();});}
+function setStatus(id,status){fetch(API_BASE +'/estimate/status',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(loadAll);}
+function delEstimate(id){fetch(API_BASE +'/estimate/'+id,{method:'DELETE',credentials:'include'}).then(loadAll);}
 function downloadCSV(){location.href='/estimates/export';}
 
 /* ================== 다크/라이트 모드 전환 ================== */
