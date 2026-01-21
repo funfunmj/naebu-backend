@@ -28,7 +28,7 @@ app.use(session({
 app.use(express.json());
 
 // ----------------- 업로드 폴더 -----------------
-const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
+
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(console.error);
 
 // ----------------- 정적 파일 -----------------
