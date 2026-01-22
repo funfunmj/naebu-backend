@@ -1,11 +1,19 @@
 require('dotenv').config();
 const express = require('express');
-const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
 const session = require('express-session');
 const cors = require('cors');
-const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
+
+// ✅ Cloudinary 추가
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -28,20 +36,14 @@ app.use(session({
 app.use(express.json());
 
 // ----------------- 업로드 폴더 -----------------
-fs.mkdir(UPLOAD_DIR, { recursive: true })
-  .catch(err => console.error('uploads 폴더 생성 실패:', err));
+
 
 // ----------------- 정적 파일 -----------------
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ----------------- multer 설정 -----------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => cb(null, Date.now() + '_' + file.originalname.replace(/\s+/g, '_'))
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif/;
     if (allowed.test(file.mimetype)) cb(null, true);
@@ -56,16 +58,7 @@ function checkAdmin(req, res, next) {
 }
 
 // ----------------- 콘텐츠 데이터 -----------------
-const contentFile = path.join(__dirname,'data','content.json');
-let CONTENT = { intro: '', slides: [], slideInterval: 4500, portfolioImages: [] };
 
-async function loadContent() {
-  try {
-    const data = await fs.readFile(contentFile, 'utf-8');
-    CONTENT = JSON.parse(data);
-  } catch { }
-}
-loadContent();
 
 // ----------------- 관리자 -----------------
 app.post('/admin/login', (req, res) => {
@@ -88,88 +81,60 @@ app.post('/admin/logout', (req, res) => {
 });
 
 // ----------------- 콘텐츠 -----------------
-app.get('/content', (req, res) => res.send(CONTENT));
 
-app.post('/content', checkAdmin, async (req, res) => {
-  CONTENT.intro = req.body.intro;
-  CONTENT.slides = req.body.slides;
-  CONTENT.slideInterval = req.body.slideInterval || 4500;
-  CONTENT.portfolioImages = req.body.portfolioImages;
-
-  try {
-    await fs.writeFile(contentFile, JSON.stringify(CONTENT, null, 2));
-    res.send({ ok: true });
-  } catch (err) {
-    res.status(500).send({ ok: false, message: err.message });
-  }
-});
 
 // ----------------- 업로드 -----------------
-app.post('/upload', checkAdmin, upload.array('image'), (req, res) => {
-  const filenames = req.files.map(f => f.filename);
-  res.send({ filenames });
-});
-
-app.post('/upload/delete', checkAdmin, async (req, res) => {
+app.post('/upload', checkAdmin, upload.array('image'), async (req, res) => {
   try {
-    const filename = path.basename(req.body.filename);
-    const filepath = path.join(UPLOAD_DIR, filename);
-    await fs.unlink(filepath).catch(() => {});
-    res.send({ ok: true });
+    const urls = [];
+
+    for (const file of req.files) {
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        { folder: 'naebu' }
+      );
+      urls.push(result.secure_url);
+    }
+
+    res.send({ urls });
   } catch (err) {
-    res.status(500).send({ ok: false, message: err.message });
+    console.error(err);
+    res.status(500).send({ ok: false, message: 'Cloudinary upload failed' });
   }
 });
 
 // ----------------- 문의 관리 -----------------
-const estimateFile = path.join(__dirname,'data', 'estimates.json');
+
 let ESTIMATES = [];
-
-async function loadEstimates() {
-  try {
-    const data = await fs.readFile(estimateFile, 'utf-8');
-    ESTIMATES = JSON.parse(data);
-  } catch { }
-}
-loadEstimates();
-
-async function saveEstimates() {
-  await fs.writeFile(estimateFile, JSON.stringify(ESTIMATES, null, 2));
-}
 
 app.get('/estimates', (req, res) => res.send(ESTIMATES));
 
 app.post('/estimate', async (req, res) => {
   const id = Date.now().toString();
   ESTIMATES.push({ id, ...req.body, date: new Date().toISOString(), status: '대기', read: 0, memo: '' });
-  await saveEstimates();
   res.send({ ok: true });
 });
 
 app.post('/estimate/read', checkAdmin, async (req, res) => {
   const e = ESTIMATES.find(x => x.id === req.body.id);
   if (e) e.read = 1;
-  await saveEstimates();
   res.send({ ok: true });
 });
 
 app.post('/estimate/memo', checkAdmin, async (req, res) => {
   const e = ESTIMATES.find(x => x.id === req.body.id);
   if (e) e.memo = req.body.memo;
-  await saveEstimates();
   res.send({ ok: true });
 });
 
 app.post('/estimate/status', checkAdmin, async (req, res) => {
   const e = ESTIMATES.find(x => x.id === req.body.id);
   if (e) e.status = req.body.status;
-  await saveEstimates();
   res.send({ ok: true });
 });
 
 app.delete('/estimate/:id', checkAdmin, async (req, res) => {
   ESTIMATES = ESTIMATES.filter(x => x.id !== req.params.id);
-  await saveEstimates();
   res.send({ ok: true });
 });
 
