@@ -220,7 +220,7 @@ function renderSlides(){
   const container=document.getElementById('slides'); container.innerHTML='';
   SLIDES.forEach((f,i)=>{
     const div=document.createElement('div'); div.className='port-item';
-    div.innerHTML=`<img src="${f}"><button onclick="event.stopPropagation();removeSlide(${i},'${f}')">삭제</button>`;
+    div.innerHTML=`<img src="${f}"><button onclick="removeSlide(${i})">삭제</button>`;
     container.appendChild(div);
   });
 }
@@ -233,13 +233,26 @@ function removeSlide(i,f){
 
 /* ================== 포트폴리오 렌더 ================== */
 function renderPortfolio(){
-  const container=document.getElementById('portfolio'); container.innerHTML='';
-  PORTFOLIO.forEach((p,i)=>{
-    const div=document.createElement('div'); div.className='port-item';
-    div.innerHTML=`<img src="${p.filename}"><oninput="PORTFOLIO[${i}].description=this.value">${p.description||''}</textarea><button onclick="event.stopPropagation();removePortfolio(${i},'${p.filename}')">삭제</button>`;
+  const container = document.getElementById('portfolio');
+  container.innerHTML = '';
+
+  PORTFOLIO.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'port-item';
+
+    div.innerHTML = `
+      <img src="${p.url}">
+      <textarea class="port-desc"
+        placeholder="설명"
+        oninput="PORTFOLIO[${i}].description=this.value"
+      >${p.description || ''}</textarea>
+      <button onclick="removePortfolio(${i})">삭제</button>
+    `;
+
     container.appendChild(div);
   });
 }
+
 function removePortfolio(i,f){
   if(confirm('삭제하시겠습니까?')){
     PORTFOLIO.splice(i,1);
@@ -248,37 +261,46 @@ function removePortfolio(i,f){
 }
 
 /* ================== 업로드 ================== */
-function uploadImage(input,type){
-  const files = Array.from(input.files); if(!files.length) return;
-  const fd = new FormData(); files.forEach(f=>fd.append('image',f));
+function uploadImage(input, type){
+  const files = Array.from(input.files);
+  if(!files.length) return;
 
-  fetch(API_BASE +'/upload',{method:'POST',credentials:'include',body:fd})
-    .then(r=>r.json())
-  .then(d=>{
-  if(!d.ok) throw new Error('업로드 실패');
+  const fd = new FormData();
+  files.forEach(f => fd.append('image', f));
 
-  if(type === 'slides'){
-    SLIDES.push(...d.urls);
-    renderSlides();
-  } else {
-    d.urls.forEach(url=>{
-      PORTFOLIO.push({ image: url, description: '' });
-    });
-    renderPortfolio();
-  }
-})
-
-    .catch(e=>alert('업로드 실패: '+e.message));
+  fetch(API_BASE + '/upload', {
+    method: 'POST',
+    credentials: 'include',
+    body: fd
+  })
+  .then(r => r.json())
+  .then(d => {
+    if(type === 'slides'){
+      SLIDES.push(...d.urls);
+      renderSlides();
+    } else {
+      d.urls.forEach(url => {
+        PORTFOLIO.push({ url, description: '' });
+      });
+      renderPortfolio();
+    }
+  })
+  .catch(() => alert('업로드 실패'));
 }
+
 
 /* ================== 저장 ================== */
 function saveContent(){
-  fetch(API_BASE +'/content',{
-    method:'POST',
-    credentials:'include',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({intro:intro.value,slideInterval:4500,slides:SLIDES,portfolioImages:PORTFOLIO})
-  }).then(()=>alert('저장 완료'));
+  fetch(API_BASE + '/content', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      intro: intro.value,
+      slides: SLIDES,
+      portfolioImages: PORTFOLIO
+    })
+  }).then(() => alert('저장 완료'));
 }
 
 /* ================== 문의 관리 ================== */
