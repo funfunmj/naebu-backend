@@ -38,6 +38,9 @@ app.use(session({
 
 /* ================= STATIC ================= */
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 /* ================= MULTER (MEMORY) ================= */
 const upload = multer({
