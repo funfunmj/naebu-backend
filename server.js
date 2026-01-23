@@ -5,8 +5,16 @@ const multer = require('multer');
 const session = require('express-session');
 const cors = require('cors');
 
+
 // ✅ Cloudinary 추가
 const cloudinary = require('cloudinary').v2;
+// ✅ Supabase 추가
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -105,36 +113,71 @@ app.post('/upload', checkAdmin, upload.array('image'), async (req, res) => {
 
 // ----------------- 문의 관리 -----------------
 
-let ESTIMATES = [];
+app.get('/estimates', checkAdmin, async (req, res) => {
+  const { data } = await supabase
+    .from('estimates')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-app.get('/estimates', (req, res) => res.send(ESTIMATES));
+  res.send(data);
+});
+
 
 app.post('/estimate', async (req, res) => {
-  const id = Date.now().toString();
-  ESTIMATES.push({ id, ...req.body, date: new Date().toISOString(), status: '대기', read: 0, memo: '' });
+  const { error } = await supabase.from('estimates').insert({
+    name: req.body.name,
+    phone: req.body.phone,
+    space: req.body.space,
+    message: req.body.message || '',
+    status: '대기',
+    read: 0,
+    memo: ''
+  });
+
+  if (error) {
+    console.error(error);
+    return res.status(500).send({ ok: false });
+  }
+
   res.send({ ok: true });
 });
+
 
 app.post('/estimate/read', checkAdmin, async (req, res) => {
-  const e = ESTIMATES.find(x => x.id === req.body.id);
-  if (e) e.read = 1;
+  await supabase
+    .from('estimates')
+    .update({ read: 1 })
+    .eq('id', req.body.id);
+
   res.send({ ok: true });
 });
 
+
 app.post('/estimate/memo', checkAdmin, async (req, res) => {
-  const e = ESTIMATES.find(x => x.id === req.body.id);
-  if (e) e.memo = req.body.memo;
+  await supabase
+    .from('estimates')
+    .update({ memo: req.body.memo })
+    .eq('id', req.body.id);
+
   res.send({ ok: true });
 });
 
 app.post('/estimate/status', checkAdmin, async (req, res) => {
-  const e = ESTIMATES.find(x => x.id === req.body.id);
-  if (e) e.status = req.body.status;
+  await supabase
+    .from('estimates')
+    .update({ status: req.body.status })
+    .eq('id', req.body.id);
+
   res.send({ ok: true });
 });
 
+
 app.delete('/estimate/:id', checkAdmin, async (req, res) => {
-  ESTIMATES = ESTIMATES.filter(x => x.id !== req.params.id);
+  await supabase
+    .from('estimates')
+    .delete()
+    .eq('id', req.params.id);
+
   res.send({ ok: true });
 });
 
