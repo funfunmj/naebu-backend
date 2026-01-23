@@ -26,14 +26,24 @@ cloudinary.config({
 });
 
 /* ================= MIDDLEWARE ================= */
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors({
+  origin: [
+    'https://naebu-backend.onrender.com',
+    'https://naebu-frontend.vercel.app'
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret_key',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
+  saveUninitialized: false,
+  cookie: {
+    secure: true,      // Render는 HTTPS
+    sameSite: 'none'   // cross-site 필수
+  }
 }));
 
 /* ================= STATIC ================= */
