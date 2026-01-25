@@ -185,5 +185,8 @@ app.delete('/estimate/:id', checkAdmin, async (req, res) => {
 
 /* ================= START ================= */
 app.listen(PORT, () => {
+  console.log('ADMIN_PW:', process.env.ADMIN_PW);
+  console.log('SESSION_SECRET:', !!process.env.SESSION_SECRET);
   console.log(`Server running on ${PORT}`);
 });
+
