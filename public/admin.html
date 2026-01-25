@@ -196,6 +196,8 @@ function loadAll(){
 
 /* ================== 통계 ================== */
 function loadStats(){
+return; 
+
   fetch(API_BASE +'/estimates/stats',{ credentials:'include'}).then(r=>r.json()).then(d=>{
     sToday.innerText=d.today||0;
     sMonth.innerText=d.month||0;
