@@ -273,7 +273,7 @@ function uploadImage(input, type){
   fetch(API_BASE + '/upload', {
     method: 'POST',
     credentials: 'include',
-    body: fd
+    body: formData
   })
   .then(r => r.json())
   .then(d => {
