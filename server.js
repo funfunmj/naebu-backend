@@ -90,32 +90,42 @@ app.get('/admin', (req, res) => {
 
 /* ================= CONTENT ================= */
 app.get('/content', async (req, res) => {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('content')
-    .select('*')
+    .select('value')
     .eq('id', 1)
     .single();
 
-  res.send({
-    intro: data?.intro || '',
-    slides: data?.slides || [],
-    portfolioImages: data?.portfolio || []
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({
+    intro: data.value.intro || '',
+    slides: data.value.slides || [],
+    portfolioImages: data.value.portfolio || []
   });
 });
 
 app.post('/content', checkAdmin, async (req, res) => {
   const { intro, slides, portfolioImages } = req.body;
 
-  await supabase
+  const { error } = await supabase
     .from('content')
     .update({
-      intro,
-      slides,
-      portfolio: portfolioImages
+      value: {
+        intro,
+        slides,
+        portfolio: portfolioImages
+      }
     })
     .eq('id', 1);
 
-  res.send({ ok: true });
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({ ok: true });
 });
 
 /* ================= UPLOAD (CLOUDINARY) ================= */
