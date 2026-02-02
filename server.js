@@ -18,6 +18,11 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log(
+  'SERVICE_ROLE_KEY:',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ? 'OK' : 'MISSING'
+);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -29,13 +34,13 @@ cloudinary.config({
 app.use(cors({
   origin: [
     'https://naebu-backend.onrender.com',
-    'https://naebu-frontend.vercel.app'
+    'https://naebu-frontend-p9tn.vercel.app'
   ],
   credentials: true
 }));
 
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret_key',
   resave: false,
@@ -84,9 +89,6 @@ app.post('/admin/logout', (req, res) => {
   req.session.destroy(() => res.send({ ok: true }));
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
 
 /* ================= CONTENT ================= */
 app.get('/content', async (req, res) => {
@@ -150,19 +152,35 @@ app.post('/upload', checkAdmin, upload.array('image'), async (req, res) => {
 
 /* ================= ESTIMATE ================= */
 app.post('/estimate', async (req, res) => {
-  const { error } = await supabase.from('estimates').insert({
-    name: req.body.name,
-    phone: req.body.phone,
-    space: req.body.space,
-    message: req.body.message || '',
-    status: '대기',
-    read: 0,
-    memo: ''
-  });
+  try {
+    const { error } = await supabase.from('estimates').insert({
+      name: req.body.name,
+      phone: req.body.phone,
+      space: req.body.space,
+      message: req.body.message || '',
+      status: '대기',
+      read: 0,
+      memo: ''
+    });
 
-  if (error) return res.status(500).send({ ok: false });
-  res.send({ ok: true });
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(500).send({
+        ok: false,
+        error: error.message
+      });
+    }
+
+    res.send({ ok: true });
+  } catch (err) {
+    console.error('Server crash:', err);
+    res.status(500).send({
+      ok: false,
+      error: err.message
+    });
+  }
 });
+
 
 app.get('/estimates', checkAdmin, async (req, res) => {
   const { data } = await supabase
