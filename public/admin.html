@@ -1,366 +1,183 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>NAEBU ADMIN</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<!-- ================= API BASE ================= -->
 <script>
 const API_BASE = 'https://naebu-backend.onrender.com';
 </script>
 
 <style>
-/* ================= CSS 변수 ================= */
-:root {
-  --bg-main: #111;
-  --bg-section: #1a1a1a;
-  --text-main: #eee;
-  --text-muted: #aaa;
-  --btn-bg: #fff;
-  --btn-color: #111;
-  --overlay: rgba(0,0,0,.7);
-  --stat-wait: #333;
-  --stat-progress: #2b3f55;
-  --stat-done: #2f4b3a;
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #eee;
 }
-
-/* ================= RESET ================= */
-body{margin:0;font-family:'Noto Sans KR',Arial;background:var(--bg-main);color:var(--text-main);}
-h2{margin-top:0}
-input,textarea,button,select{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:none;}
-button{background:var(--btn-bg);color:var(--btn-color);cursor:pointer;}
-
-/* ================= FLEX & PORTFOLIO ================= */
-.flex{display:flex;gap:10px;flex-wrap:wrap;}
-.port-item{background:#222;padding:10px;border-radius:8px;width:180px;position:relative;}
-img{width:100%;border-radius:6px;}
-textarea.port-desc{margin-top:6px;padding:6px;font-size:12px;}
-.port-item button{position:absolute;top:6px;right:6px;padding:4px 6px;font-size:11px;}
-
-/* ================= 문의 관리 ================= */
-.estimate{padding:15px;border-radius:10px;margin-bottom:12px;cursor:pointer;color:var(--text-main);}
-.wait{background:var(--stat-wait);}
-.progress{background:var(--stat-progress);}
-.done{background:var(--stat-done);}
-.estimate.unread{border-left:4px solid #ff6b6b;}
-.row{display:flex;gap:6px;margin-top:6px;}
-.row button{flex:1;font-size:12px;}
-
-/* ================= POPUP ================= */
-#detailPopup{display:none;position:fixed;inset:0;background:var(--overlay);align-items:center;justify-content:center;}
-#detailPopup>div{background:var(--bg-section);padding:30px;border-radius:12px;width:420px;}
-
-/* ================= 통계 카드 ================= */
-.stat{padding:15px;border-radius:10px;margin-bottom:12px;color:var(--text-main);text-align:center;flex:1;}
-.stat.wait{background:var(--stat-wait);}
-.stat.progress{background:var(--stat-progress);}
-.stat.done{background:var(--stat-done);}
-
-/* ================= THEME SWITCH ================= */
-#themeToggle{position:fixed;bottom:20px;right:20px;padding:10px 16px;border:none;border-radius:6px;background:#fff;color:#000;cursor:pointer;z-index:3000;}
+input, textarea, button, select {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 6px;
+  border: none;
+}
+button {
+  cursor: pointer;
+}
+.card {
+  background: #1e1e1e;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.hidden { display: none; }
+.status-대기 { background:#333; }
+.status-진행중 { background:#2b3f55; }
+.status-처리완료 { background:#2f4b3a; }
 </style>
 </head>
 <body>
 
-<section id="loginSection">
+<!-- 로그인 -->
+<section id="login">
   <h2>관리자 로그인</h2>
-  <input id="pw" type="password" placeholder="비밀번호">
+  <input id="password" type="password" placeholder="비밀번호" />
   <button onclick="login()">로그인</button>
 </section>
 
-<section id="adminSection" style="display:none">
-
-<!-- 통계 -->
-<section>
-  <h2>문의 통계</h2>
-  <div class="flex">
-    <div class="stat wait">오늘<br><b id="sToday">0</b></div>
-    <div class="stat progress">이번달<br><b id="sMonth">0</b></div>
-    <div class="stat wait">대기<br><b id="sWait">0</b></div>
-    <div class="stat progress">진행중<br><b id="sProgress">0</b></div>
-    <div class="stat done">완료<br><b id="sDone">0</b></div>
-  </div>
-  <canvas id="chart" height="120"></canvas>
+<!-- 관리자 -->
+<section id="admin" class="hidden">
+  <h2>문의 목록</h2>
+  <div id="list"></div>
+  <button onclick="logout()">로그아웃</button>
 </section>
 
-<hr>
-
-<!-- 회사 소개 -->
-<h2>회사 소개</h2>
-<textarea id="intro" rows="6"></textarea>
-<button onclick="saveContent()">전체 저장</button>
-
-<hr>
-
-<!-- 슬라이드 -->
-<h2>슬라이드</h2>
-<input type="file" onchange="uploadImage(this,'slides')" multiple>
-<div id="slides" class="flex"></div>
-
-<hr>
-
-<!-- 포트폴리오 -->
-<h2>포트폴리오</h2>
-<input type="file" onchange="uploadImage(this,'portfolio')" multiple>
-<div id="portfolio" class="flex"></div>
-
-<hr>
-
-<!-- 문의 관리 -->
-<h2>문의 관리</h2>
-<div class="flex">
-  <input id="searchInput" placeholder="이름 / 전화 / 공간 / 내용 검색" oninput="applyFilter()">
-  <select id="statusFilter" onchange="applyFilter()">
-    <option value="">전체 상태</option>
+<!-- 상세 -->
+<div id="detail" class="hidden">
+  <h3>문의 상세</h3>
+  <div id="detailBody"></div>
+  <textarea id="memo" placeholder="관리자 메모"></textarea>
+  <select id="status">
     <option value="대기">대기</option>
     <option value="진행중">진행중</option>
-    <option value="처리완료">완료</option>
+    <option value="처리완료">처리완료</option>
   </select>
+  <button onclick="saveDetail()">저장</button>
+  <button onclick="closeDetail()">닫기</button>
 </div>
 
-<div id="estimates"></div>
-
-<button onclick="logout()">로그아웃</button>
-</section>
-
-<!-- 상세 팝업 -->
-<div id="detailPopup">
-  <div>
-    <h3>문의 상세</h3>
-    <div id="detailBody"></div>
-    <textarea id="memoInput" placeholder="관리자 메모"></textarea>
-    <div class="flex">
-      <button onclick="saveMemo()">메모 저장</button>
-      <button onclick="detailPopup.style.display='none'">닫기</button>
-    </div>
-  </div>
-</div>
-
-<!-- 다크/라이트 모드 버튼 -->
-<button id="themeToggle" onclick="toggleTheme()">모드 전환</button>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let DATA=null, ESTIMATES=[], chart;
-let CURRENT_DETAIL=null;
-let SLIDES=[], PORTFOLIO=[];
-let darkMode = true;
-const root = document.documentElement;
+let ESTIMATES = [];
+let CURRENT = null;
 
-/* ================== 로그인 체크 & 세션 대응 ================== */
+/* ===== 로그인 체크 ===== */
 fetch(API_BASE + '/admin/check', { credentials:'include' })
   .then(r=>r.json())
-  .then(d=>{ if(d.ok) showAdmin(); });
+  .then(d => { if(d.ok) showAdmin(); });
 
 function login(){
-  fetch(API_BASE + '/admin/login',{
+  fetch(API_BASE + '/admin/login', {
     method:'POST',
     credentials:'include',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({password:pw.value})
-  }).then(r=>r.json()).then(d=>{
+    body:JSON.stringify({ password: password.value })
+  })
+  .then(r=>r.json())
+  .then(d=>{
     if(d.ok) showAdmin();
     else alert('비밀번호 오류');
   });
 }
 
 function logout(){
-  fetch(API_BASE + '/admin/logout',{ method:'POST', credentials:'include' })
-    .then(()=>location.reload());
+  fetch(API_BASE + '/admin/logout', {
+    method:'POST',
+    credentials:'include'
+  }).then(()=>location.reload());
 }
 
 function showAdmin(){
-  loginSection.style.display='none';
-  adminSection.style.display='block';
-  loadAll();
+  login.classList.add('hidden');
+  admin.classList.remove('hidden');
+  loadEstimates();
 }
 
-/* ================== 전체 로드 ================== */
-function loadAll(){
-  fetch(API_BASE + '/content',{ credentials:'include'}).then(r=>r.json()).then(d=>{
-    DATA=d;
-    intro.value=d.intro||'';
-    SLIDES=d.slides||[];
-    PORTFOLIO=d.portfolioImages||[];
-    renderSlides();
-    renderPortfolio();
-  });
-
-  fetch(API_BASE +'/estimates',{credentials:'include'}).then(r=>r.json()).then(d=>{
-    ESTIMATES=d;
-    applyFilter();
-    loadStats();
-  });
-}
-
-/* ================== 통계 ================== */
-function loadStats(){
-return; 
-
-  fetch(API_BASE +'/estimates/stats',{ credentials:'include'}).then(r=>r.json()).then(d=>{
-    sToday.innerText=d.today||0;
-    sMonth.innerText=d.month||0;
-    sWait.innerText=d.status['대기']||0;
-    sProgress.innerText=d.status['진행중']||0;
-    sDone.innerText=d.status['처리완료']||0;
-
-    if(chart) chart.destroy();
-    chart = new Chart(document.getElementById('chart'),{
-      type:'line',
-      data:{
-        labels:d.monthly.map(x=>x.month),
-        datasets:[{label:'월별 문의',data:d.monthly.map(x=>x.count),borderWidth:2,borderColor:'#fff',backgroundColor:'rgba(255,255,255,0.2)'}]
-      },
-      options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}}
+/* ===== 문의 ===== */
+function loadEstimates(){
+  fetch(API_BASE + '/estimates', { credentials:'include' })
+    .then(r=>r.json())
+    .then(d=>{
+      ESTIMATES = d;
+      render();
     });
-  });
 }
 
-/* ================== 슬라이드 렌더 ================== */
-function renderSlides(){
-  const container=document.getElementById('slides'); container.innerHTML='';
-  SLIDES.forEach((f,i)=>{
-    const div=document.createElement('div'); div.className='port-item';
-    div.innerHTML=`<img src="${f}"><button onclick="removeSlide(${i})">삭제</button>`;
-    container.appendChild(div);
-  });
-}
-function removeSlide(i){
-  if(confirm('삭제하시겠습니까?')){
-    SLIDES.splice(i,1);
-    renderSlides();
-  }
-}
-
-/* ================== 포트폴리오 렌더 ================== */
-function renderPortfolio(){
-  const container = document.getElementById('portfolio');
-  container.innerHTML = '';
-
-  PORTFOLIO.forEach((p, i) => {
+function render(){
+  list.innerHTML='';
+  ESTIMATES.forEach(e=>{
     const div = document.createElement('div');
-    div.className = 'port-item';
-
+    div.className = `card status-${e.status}`;
+    div.onclick = ()=>openDetail(e.id);
     div.innerHTML = `
-      <img src="${p.url}">
-      <textarea class="port-desc"
-        placeholder="설명"
-        oninput="PORTFOLIO[${i}].description=this.value"
-      >${p.description || ''}</textarea>
-      <button onclick="removePortfolio(${i})">삭제</button>
+      <b>${e.name}</b> (${e.space})<br>
+      ${e.phone}<br>
+      예상금액: ${e.budget || '-'}<br>
+      <small>${e.status}</small>
     `;
-
-    container.appendChild(div);
-  });
-}
-
-function removePortfolio(i){
-  if(confirm('삭제하시겠습니까?')){
-    PORTFOLIO.splice(i,1);
-    renderPortfolio();
-  }
-}
-
-/* ================== 업로드 ================== */
-function uploadImage(input, type){
-  const files = Array.from(input.files);
-  if(!files.length) return;
-
-const fd = new FormData();
-files.forEach(f => fd.append('image', f));
-
-fetch(API_BASE + '/upload', {
-  method: 'POST',
-  credentials: 'include',
-  body: fd
-})
-  .then(r => r.json())
-  .then(d => {
-    if(type === 'slides'){
-      SLIDES.push(...d.urls);
-      renderSlides();
-    } else {
-      d.urls.forEach(url => {
-        PORTFOLIO.push({ url, description: '' });
-      });
-      renderPortfolio();
-    }
-   saveContent();
-  })
-  .catch(() => alert('업로드 실패'));
-}
-
-
-/* ================== 저장 ================== */
-function saveContent(){
-  fetch(API_BASE + '/content', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      intro: intro.value,
-      slides: SLIDES,
-      portfolioImages: PORTFOLIO
-    })
-  }).then(() => alert('저장 완료'));
-}
-
-/* ================== 문의 관리 ================== */
-function applyFilter(){
-  const q=searchInput.value.toLowerCase(),s=statusFilter.value;
-  renderEstimates(ESTIMATES.filter(e=>{const t=`${e.name}${e.phone}${e.space}${e.message}`.toLowerCase(); return(!q||t.includes(q))&&(!s||e.status===s);}));
-}
-
-function renderEstimates(list){
-  const container=document.getElementById('estimates'); container.innerHTML='';
-  list.forEach(e=>{
-    const div=document.createElement('div');
-    div.className=`estimate ${e.status==='대기'?'wait':e.status==='진행중'?'progress':'done'} ${e.read===0?'unread':''}`;
-    div.onclick=()=>openDetail(e.id);
-    div.innerHTML=`<b>${e.name}</b> | ${e.space}<br>${e.phone}<br>${e.message||''}<br><small>${e.date}</small><div class="row"><button onclick="event.stopPropagation();setStatus('${e.id}','대기')">대기</button><button onclick="event.stopPropagation();setStatus('${e.id}','진행중')">진행중</button><button onclick="event.stopPropagation();setStatus('${e.id}','처리완료')">완료</button><button onclick="event.stopPropagation();delEstimate('${e.id}')">삭제</button></div>`;
-    container.appendChild(div);
+    list.appendChild(div);
   });
 }
 
 function openDetail(id){
-  const e=ESTIMATES.find(x=>x.id===id); if(!e) return;
-  CURRENT_DETAIL=e;
-  detailBody.innerHTML=`<b>이름:</b> ${e.name}<br><b>연락처:</b> ${e.phone}<br><b>공간:</b> ${e.space}<br><br>${e.message||''}`;
-  memoInput.value=e.memo||''; detailPopup.style.display='flex';
-  if(e.read===0) fetch(API_BASE +'/estimate/read',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:e.id})}).then(loadAll);
-}
-function saveMemo(){if(!CURRENT_DETAIL) return; fetch(API_BASE +'/estimate/memo',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CURRENT_DETAIL.id,memo:memoInput.value})}).then(()=>{detailPopup.style.display='none';loadAll();});}
-function setStatus(id,status){fetch(API_BASE +'/estimate/status',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(loadAll);}
-function delEstimate(id){fetch(API_BASE +'/estimate/'+id,{method:'DELETE',credentials:'include'}).then(loadAll);}
+  CURRENT = ESTIMATES.find(e=>e.id===id);
+  if(!CURRENT) return;
 
+  detailBody.innerHTML = `
+    <b>이름:</b> ${CURRENT.name}<br>
+    <b>연락처:</b> ${CURRENT.phone}<br>
+    <b>공간:</b> ${CURRENT.space}<br>
+    <b>예상금액:</b> ${CURRENT.budget}<br><br>
+    ${CURRENT.message || ''}
+  `;
+
+  memo.value = CURRENT.memo || '';
+  status.value = CURRENT.status;
+  detail.classList.remove('hidden');
+
+  fetch(API_BASE + '/estimate/read', {
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ id: CURRENT.id })
+  });
 }
 
-/* ================== 다크/라이트 모드 전환 ================== */
-function toggleTheme(){
-  darkMode = !darkMode;
-  if(darkMode){
-    root.style.setProperty('--bg-main','#111');
-    root.style.setProperty('--bg-section','#1a1a1a');
-    root.style.setProperty('--text-main','#eee');
-    root.style.setProperty('--text-muted','#aaa');
-    root.style.setProperty('--btn-bg','#fff');
-    root.style.setProperty('--btn-color','#111');
-    root.style.setProperty('--stat-wait','#333');
-    root.style.setProperty('--stat-progress','#2b3f55');
-    root.style.setProperty('--stat-done','#2f4b3a');
-  } else {
-    root.style.setProperty('--bg-main','#f5f5f5');
-    root.style.setProperty('--bg-section','#fff');
-    root.style.setProperty('--text-main','#111');
-    root.style.setProperty('--text-muted','#666');
-    root.style.setProperty('--btn-bg','#111');
-    root.style.setProperty('--btn-color','#fff');
-    root.style.setProperty('--stat-wait','#ccc');
-    root.style.setProperty('--stat-progress','#55aaff');
-    root.style.setProperty('--stat-done','#33aa33');
-  }
+function saveDetail(){
+  fetch(API_BASE + '/estimate/memo', {
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ id: CURRENT.id, memo: memo.value })
+  });
+
+  fetch(API_BASE + '/estimate/status', {
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ id: CURRENT.id, status: status.value })
+  }).then(()=>{
+    closeDetail();
+    loadEstimates();
+  });
+}
+
+function closeDetail(){
+  detail.classList.add('hidden');
 }
 </script>
+
 </body>
 </html>
