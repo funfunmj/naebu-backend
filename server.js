@@ -1,10 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
-const multer = require('multer');
-const session = require('express-session');
 const cors = require('cors');
-
+const session = require('express-session');
+const multer = require('multer');
+const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { createClient } = require('@supabase/supabase-js');
 
@@ -32,12 +31,10 @@ cloudinary.config({
 
 /* ================= MIDDLEWARE ================= */
 app.use(cors({
-  origin: [
-    'https://naebu-backend.onrender.com',
-    'https://naebu-frontend-p9tn.vercel.app'
-  ],
+  origin: true,       
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,15 +43,16 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,      // Render는 HTTPS
-    sameSite: 'none'   // cross-site 필수
-  }
+  secure: true,
+  sameSite: 'none',
+  httpOnly: true
+}
 }));
 
 /* ================= STATIC ================= */
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, 'public/admin.html'));
 });
 
 /* ================= MULTER (MEMORY) ================= */

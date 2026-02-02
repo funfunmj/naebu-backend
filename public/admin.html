@@ -118,7 +118,7 @@ textarea.port-desc{margin-top:6px;padding:6px;font-size:12px;}
     <option value="처리완료">완료</option>
   </select>
 </div>
-<button onclick="downloadCSV()">CSV 다운로드</button>
+
 <div id="estimates"></div>
 
 <button onclick="logout()">로그아웃</button>
@@ -226,7 +226,7 @@ function renderSlides(){
     container.appendChild(div);
   });
 }
-function removeSlide(i,f){
+function removeSlide(i){
   if(confirm('삭제하시겠습니까?')){
     SLIDES.splice(i,1);
     renderSlides();
@@ -255,7 +255,7 @@ function renderPortfolio(){
   });
 }
 
-function removePortfolio(i,f){
+function removePortfolio(i){
   if(confirm('삭제하시겠습니까?')){
     PORTFOLIO.splice(i,1);
     renderPortfolio();
@@ -267,14 +267,14 @@ function uploadImage(input, type){
   const files = Array.from(input.files);
   if(!files.length) return;
 
-  const fd = new FormData();
-  files.forEach(f => fd.append('image', f));
+const fd = new FormData();
+files.forEach(f => fd.append('image', f));
 
-  fetch(API_BASE + '/upload', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData
-  })
+fetch(API_BASE + '/upload', {
+  method: 'POST',
+  credentials: 'include',
+  body: fd
+})
   .then(r => r.json())
   .then(d => {
     if(type === 'slides'){
@@ -286,6 +286,7 @@ function uploadImage(input, type){
       });
       renderPortfolio();
     }
+   saveContent();
   })
   .catch(() => alert('업로드 실패'));
 }
@@ -332,7 +333,8 @@ function openDetail(id){
 function saveMemo(){if(!CURRENT_DETAIL) return; fetch(API_BASE +'/estimate/memo',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CURRENT_DETAIL.id,memo:memoInput.value})}).then(()=>{detailPopup.style.display='none';loadAll();});}
 function setStatus(id,status){fetch(API_BASE +'/estimate/status',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(loadAll);}
 function delEstimate(id){fetch(API_BASE +'/estimate/'+id,{method:'DELETE',credentials:'include'}).then(loadAll);}
-function downloadCSV(){location.href='/estimates/export';}
+
+}
 
 /* ================== 다크/라이트 모드 전환 ================== */
 function toggleTheme(){
