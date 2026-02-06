@@ -1,57 +1,54 @@
 import express from "express";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
 
 const app = express();
-
-/* ==================================================
-   1️⃣ CORS 설정 (가장 중요)
-================================================== */
-app.use(cors({
-  origin: "https://naebu-frontend.vercel.app",
-  methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  credentials: true
-}));
-
-// preflight 요청 대응
-app.options("*", cors());
-
-/* ==================================================
-   2️⃣ 기본 미들웨어
-================================================== */
+app.use(cors());
 app.use(express.json());
 
-/* ==================================================
-   3️⃣ 테스트용 루트 (서버 살아있는지 확인용)
-================================================== */
+// ✅ Supabase 연결
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// ✅ 테스트용
 app.get("/", (req, res) => {
-  res.send("NAEBU BACKEND OK");
+  res.send("Server OK");
 });
 
-/* ==================================================
-   4️⃣ 문의 폼 저장 (index → server)
-================================================== */
-app.post("/estimate", (req, res) => {
+// ✅ 문의 저장 API
+app.post("/estimate", async (req, res) => {
   const { name, phone, budget, space, message } = req.body;
 
-  if (!name || !phone) {
-    return res.status(400).json({ ok: false, message: "필수값 누락" });
+  console.log("문의 수신:", req.body);
+
+  const { data, error } = await supabase
+    .from("estimates")
+    .insert([
+      {
+        name,
+        phone,
+        budget,
+        space,
+        message,
+      },
+    ]);
+
+  console.log("SUPABASE DATA:", data);
+  console.log("SUPABASE ERROR:", error);
+
+  if (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 
-  console.log("문의 수신:", {
-    name,
-    phone,
-    budget,
-    space,
-    message
-  });
-
-  res.json({ ok: true });
+  res.json({ success: true });
 });
 
-/* ==================================================
-   5️⃣ 서버 실행
-================================================== */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log(`Server running on port ${PORT}`);
 });
