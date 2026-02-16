@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <script>
-const API_BASE = ' ';
+const API_BASE = ""; // ⭐ 반드시 빈 문자열
 </script>
 
 <style>
@@ -24,9 +24,7 @@ input, textarea, button, select {
   border-radius: 6px;
   border: none;
 }
-button {
-  cursor: pointer;
-}
+button { cursor: pointer; }
 .card {
   background: #1e1e1e;
   padding: 15px;
@@ -42,14 +40,14 @@ button {
 <body>
 
 <!-- 로그인 -->
-<section id="login">
+<section id="loginSection">
   <h2>관리자 로그인</h2>
-  <input id="password" type="password" placeholder="비밀번호" />
-  <button onclick="login()">로그인</button>
+  <input id="passwordInput" type="password" placeholder="비밀번호" />
+  <button onclick="adminLogin()">로그인</button>
 </section>
 
 <!-- 관리자 -->
-<section id="admin" class="hidden">
+<section id="adminSection" class="hidden">
   <h2>문의 목록</h2>
   <div id="list"></div>
   <button onclick="logout()">로그아웃</button>
@@ -73,41 +71,45 @@ button {
 let ESTIMATES = [];
 let CURRENT = null;
 
-/* ===== 로그인 체크 ===== */
-fetch(API_BASE + '/admin/check', { credentials:'include' })
-  .then(r=>r.json())
-  .then(d => { if(d.ok) showAdmin(); });
+const loginSection = document.getElementById("loginSection");
+const adminSection = document.getElementById("adminSection");
+const passwordInput = document.getElementById("passwordInput");
+const list = document.getElementById("list");
+const detail = document.getElementById("detail");
+const detailBody = document.getElementById("detailBody");
+const memo = document.getElementById("memo");
+const status = document.getElementById("status");
 
-function login(){
+/* ===== 로그인 ===== */
+function adminLogin(){
   fetch(API_BASE + '/admin/login', {
     method:'POST',
-    credentials:'include',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ password: password.value })
+    body:JSON.stringify({ password: passwordInput.value })
   })
   .then(r=>r.json())
   .then(d=>{
-    if(d.ok) showAdmin();
-    else alert('비밀번호 오류');
+    if(d.ok){
+      showAdmin();
+    } else {
+      alert('비밀번호 오류');
+    }
   });
 }
 
 function logout(){
-  fetch(API_BASE + '/admin/logout', {
-    method:'POST',
-    credentials:'include'
-  }).then(()=>location.reload());
+  location.reload();
 }
 
 function showAdmin(){
-  login.classList.add('hidden');
-  admin.classList.remove('hidden');
+  loginSection.classList.add('hidden');
+  adminSection.classList.remove('hidden');
   loadEstimates();
 }
 
 /* ===== 문의 ===== */
 function loadEstimates(){
-  fetch(API_BASE + '/estimates', { credentials:'include' })
+  fetch(API_BASE + '/estimates')
     .then(r=>r.json())
     .then(d=>{
       ESTIMATES = d;
@@ -146,26 +148,17 @@ function openDetail(id){
   memo.value = CURRENT.memo || '';
   status.value = CURRENT.status;
   detail.classList.remove('hidden');
-
-  fetch(API_BASE + '/estimate/read', {
-    method:'POST',
-    credentials:'include',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ id: CURRENT.id })
-  });
 }
 
 function saveDetail(){
   fetch(API_BASE + '/estimate/memo', {
     method:'POST',
-    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ id: CURRENT.id, memo: memo.value })
   });
 
   fetch(API_BASE + '/estimate/status', {
     method:'POST',
-    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ id: CURRENT.id, status: status.value })
   }).then(()=>{
