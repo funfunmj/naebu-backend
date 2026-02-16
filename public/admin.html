@@ -5,10 +5,6 @@
 <title>NAEBU ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<script>
-const API_BASE = ""; // ⭐ 반드시 빈 문자열
-</script>
-
 <style>
 body {
   margin: 0;
@@ -17,7 +13,7 @@ body {
   background: #111;
   color: #eee;
 }
-input, textarea, button, select {
+input, button {
   width: 100%;
   padding: 10px;
   margin: 6px 0;
@@ -25,150 +21,54 @@ input, textarea, button, select {
   border: none;
 }
 button { cursor: pointer; }
-.card {
-  background: #1e1e1e;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
 .hidden { display: none; }
-.status-대기 { background:#333; }
-.status-진행중 { background:#2b3f55; }
-.status-처리완료 { background:#2f4b3a; }
 </style>
 </head>
 <body>
 
-<!-- 로그인 -->
 <section id="loginSection">
   <h2>관리자 로그인</h2>
   <input id="passwordInput" type="password" placeholder="비밀번호" />
-  <button onclick="adminLogin()">로그인</button>
+  <button id="loginBtn">로그인</button>
 </section>
 
-<!-- 관리자 -->
 <section id="adminSection" class="hidden">
-  <h2>문의 목록</h2>
-  <div id="list"></div>
+  <h2>관리자 화면</h2>
   <button onclick="logout()">로그아웃</button>
 </section>
 
-<!-- 상세 -->
-<div id="detail" class="hidden">
-  <h3>문의 상세</h3>
-  <div id="detailBody"></div>
-  <textarea id="memo" placeholder="관리자 메모"></textarea>
-  <select id="status">
-    <option value="대기">대기</option>
-    <option value="진행중">진행중</option>
-    <option value="처리완료">처리완료</option>
-  </select>
-  <button onclick="saveDetail()">저장</button>
-  <button onclick="closeDetail()">닫기</button>
-</div>
-
 <script>
-let ESTIMATES = [];
-let CURRENT = null;
-
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
 const passwordInput = document.getElementById("passwordInput");
-const list = document.getElementById("list");
-const detail = document.getElementById("detail");
-const detailBody = document.getElementById("detailBody");
-const memo = document.getElementById("memo");
-const status = document.getElementById("status");
+const loginBtn = document.getElementById("loginBtn");
 
-/* ===== 로그인 ===== */
-function adminLogin(){
-  fetch(API_BASE + '/admin/login', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ password: passwordInput.value })
-  })
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.ok){
-      showAdmin();
+loginBtn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: passwordInput.value })
+    });
+
+    const data = await res.json();
+    console.log("SERVER RESPONSE:", data);
+
+    if (data.ok) {
+      loginSection.classList.add("hidden");
+      adminSection.classList.remove("hidden");
     } else {
-      alert('비밀번호 오류');
+      alert("비밀번호 오류");
     }
-  });
-}
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    alert("서버 연결 실패");
+  }
+});
 
 function logout(){
   location.reload();
-}
-
-function showAdmin(){
-  loginSection.classList.add('hidden');
-  adminSection.classList.remove('hidden');
-  loadEstimates();
-}
-
-/* ===== 문의 ===== */
-function loadEstimates(){
-  fetch(API_BASE + '/estimates')
-    .then(r=>r.json())
-    .then(d=>{
-      ESTIMATES = d;
-      render();
-    });
-}
-
-function render(){
-  list.innerHTML='';
-  ESTIMATES.forEach(e=>{
-    const div = document.createElement('div');
-    div.className = `card status-${e.status}`;
-    div.onclick = ()=>openDetail(e.id);
-    div.innerHTML = `
-      <b>${e.name}</b> (${e.space})<br>
-      ${e.phone}<br>
-      예상금액: ${e.budget || '-'}<br>
-      <small>${e.status}</small>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function openDetail(id){
-  CURRENT = ESTIMATES.find(e=>e.id===id);
-  if(!CURRENT) return;
-
-  detailBody.innerHTML = `
-    <b>이름:</b> ${CURRENT.name}<br>
-    <b>연락처:</b> ${CURRENT.phone}<br>
-    <b>공간:</b> ${CURRENT.space}<br>
-    <b>예상금액:</b> ${CURRENT.budget}<br><br>
-    ${CURRENT.message || ''}
-  `;
-
-  memo.value = CURRENT.memo || '';
-  status.value = CURRENT.status;
-  detail.classList.remove('hidden');
-}
-
-function saveDetail(){
-  fetch(API_BASE + '/estimate/memo', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ id: CURRENT.id, memo: memo.value })
-  });
-
-  fetch(API_BASE + '/estimate/status', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ id: CURRENT.id, status: status.value })
-  }).then(()=>{
-    closeDetail();
-    loadEstimates();
-  });
-}
-
-function closeDetail(){
-  detail.classList.add('hidden');
 }
 </script>
 
