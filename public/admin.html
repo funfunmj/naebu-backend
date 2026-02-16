@@ -13,14 +13,20 @@ body {
   background: #111;
   color: #eee;
 }
-input, button {
+input, textarea, select, button {
   width: 100%;
-  padding: 10px;
-  margin: 6px 0;
+  padding: 8px;
+  margin: 5px 0;
   border-radius: 6px;
   border: none;
 }
 button { cursor: pointer; }
+.card {
+  background: #222;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
 .hidden { display: none; }
 </style>
 </head>
@@ -33,42 +39,87 @@ button { cursor: pointer; }
 </section>
 
 <section id="adminSection" class="hidden">
-  <h2>관리자 화면</h2>
+  <h2>문의 목록</h2>
   <button onclick="logout()">로그아웃</button>
+  <div id="list"></div>
 </section>
 
 <script>
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
-const passwordInput = document.getElementById("passwordInput");
-const loginBtn = document.getElementById("loginBtn");
+const listDiv = document.getElementById("list");
 
-loginBtn.addEventListener("click", async () => {
-  try {
-    const res = await fetch("/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: passwordInput.value })
-    });
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const res = await fetch("/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: passwordInput.value })
+  });
 
-    const data = await res.json();
-    console.log("SERVER RESPONSE:", data);
+  const data = await res.json();
 
-    if (data.ok) {
-      loginSection.classList.add("hidden");
-      adminSection.classList.remove("hidden");
-    } else {
-      alert("비밀번호 오류");
-    }
-
-  } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    alert("서버 연결 실패");
+  if (data.ok) {
+    loginSection.classList.add("hidden");
+    adminSection.classList.remove("hidden");
+    loadEstimates();
+  } else {
+    alert("비밀번호 오류");
   }
 });
 
 function logout(){
   location.reload();
+}
+
+async function loadEstimates() {
+  const res = await fetch("/estimates");
+  const data = await res.json();
+
+  listDiv.innerHTML = "";
+
+  data.reverse().forEach(item => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <b>이름:</b> ${item.name}<br>
+      <b>전화:</b> ${item.phone}<br>
+      <b>내용:</b> ${item.content}<br><br>
+
+      <b>상태:</b>
+      <select onchange="changeStatus(${item.id}, this.value)">
+        <option ${item.status=="대기"?"selected":""}>대기</option>
+        <option ${item.status=="진행중"?"selected":""}>진행중</option>
+        <option ${item.status=="완료"?"selected":""}>완료</option>
+      </select>
+
+      <b>메모:</b>
+      <textarea id="memo-${item.id}">${item.memo || ""}</textarea>
+      <button onclick="saveMemo(${item.id})">메모 저장</button>
+    `;
+
+    listDiv.appendChild(div);
+  });
+}
+
+async function changeStatus(id, status){
+  await fetch("/estimate/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status })
+  });
+}
+
+async function saveMemo(id){
+  const memo = document.getElementById("memo-"+id).value;
+
+  await fetch("/estimate/memo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, memo })
+  });
+
+  alert("메모 저장 완료");
 }
 </script>
 
