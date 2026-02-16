@@ -69,6 +69,22 @@ app.post("/estimate", async (req, res) => {
 });
 
 // =========================
+// ✅ 관리자 로그인 API
+// =========================
+
+const ADMIN_PASSWORD = "naebu2026"; // ← 여기 원하는 비번으로 바꿔
+
+app.post("/admin/login", (req, res) => {
+  const { password } = req.body;
+
+  if (password === ADMIN_PASSWORD) {
+    return res.json({ success: true });
+  }
+
+  res.status(401).json({ success: false });
+});
+
+// =========================
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
