@@ -69,20 +69,32 @@ app.post("/estimate", async (req, res) => {
 });
 
 // =========================
-// ✅ 관리자 로그인 API
+// ✅ 관리자 로그인 시스템
 // =========================
 
-const ADMIN_PASSWORD = "naebu2026"; // ← 여기 원하는 비번으로 바꿔
+const ADMIN_PASSWORD = "1234";
 
+// 로그인
 app.post("/admin/login", (req, res) => {
   const { password } = req.body;
 
   if (password === ADMIN_PASSWORD) {
-    return res.json({ success: true });
+    return res.json({ ok: true });
   }
 
-  res.status(401).json({ success: false });
+  res.status(401).json({ ok: false });
 });
+
+// 로그인 상태 체크
+app.get("/admin/check", (req, res) => {
+  res.json({ ok: false }); // (지금은 세션 없으니까 항상 false)
+});
+
+// 로그아웃
+app.post("/admin/logout", (req, res) => {
+  res.json({ ok: true });
+});
+
 
 // =========================
 
