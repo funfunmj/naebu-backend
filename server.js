@@ -1,10 +1,16 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ⭐ ESM에서 __dirname 만들기
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ✅ Supabase 연결
 const supabase = createClient(
@@ -12,12 +18,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// =========================
+// ✅ 정적 파일 설정 (public 폴더)
+// =========================
+app.use(express.static(path.join(__dirname, "public")));
+
+// ✅ /admin 라우트 추가
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// =========================
 // ✅ 테스트용
+// =========================
 app.get("/", (req, res) => {
   res.send("Server OK");
 });
 
+// =========================
 // ✅ 문의 저장 API
+// =========================
 app.post("/estimate", async (req, res) => {
   const { name, phone, budget, space, message } = req.body;
 
@@ -47,6 +67,8 @@ app.post("/estimate", async (req, res) => {
 
   res.json({ success: true });
 });
+
+// =========================
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
