@@ -48,11 +48,13 @@ button { cursor: pointer; }
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
 const listDiv = document.getElementById("list");
+const passwordInput = document.getElementById("passwordInput");
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const res = await fetch("/admin/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ password: passwordInput.value })
   });
 
@@ -72,54 +74,59 @@ function logout(){
 }
 
 async function loadEstimates() {
-  const res = await fetch("/estimates");
+  const res = await fetch("/estimates", {
+    credentials: "include"
+  });
+
   const data = await res.json();
+
+  if (!Array.isArray(data)) {
+    console.error("배열 아님:", data);
+    return;
+  }
 
   listDiv.innerHTML = "";
 
-  data.reverse().forEach(item => {
+  data.forEach(item => {
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
       <b>이름:</b> ${item.name}<br>
       <b>전화:</b> ${item.phone}<br>
-      <b>내용:</b> ${item.content}<br><br>
+      <b>예산:</b> ${item.budget || ""}<br>
+      <b>공간:</b> ${item.space || ""}<br>
+      <b>내용:</b> ${item.message || ""}<br><br>
 
       <b>상태:</b>
-      <select onchange="changeStatus(${item.id}, this.value)">
-        <option ${item.status=="대기"?"selected":""}>대기</option>
-        <option ${item.status=="진행중"?"selected":""}>진행중</option>
-        <option ${item.status=="완료"?"selected":""}>완료</option>
+      <select onchange="updateEstimate('${item.id}')">
+        <option value="대기" ${item.status=="대기"?"selected":""}>대기</option>
+        <option value="진행중" ${item.status=="진행중"?"selected":""}>진행중</option>
+        <option value="완료" ${item.status=="완료"?"selected":""}>완료</option>
       </select>
 
       <b>메모:</b>
       <textarea id="memo-${item.id}">${item.memo || ""}</textarea>
-      <button onclick="saveMemo(${item.id})">메모 저장</button>
+      <button onclick="updateEstimate('${item.id}')">저장</button>
     `;
 
     listDiv.appendChild(div);
   });
 }
 
-async function changeStatus(id, status){
-  await fetch("/estimate/status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, status })
-  });
-}
-
-async function saveMemo(id){
+async function updateEstimate(id){
   const memo = document.getElementById("memo-"+id).value;
+  const select = document.querySelector(`select[onchange="updateEstimate('${id}')"]`);
+  const status = select.value;
 
-  await fetch("/estimate/memo", {
-    method: "POST",
+  await fetch("/estimates/" + id, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, memo })
+    credentials: "include",
+    body: JSON.stringify({ status, memo })
   });
 
-  alert("메모 저장 완료");
+  alert("저장 완료");
 }
 </script>
 
