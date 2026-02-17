@@ -48,6 +48,19 @@ button { cursor: pointer; }
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
 const listDiv = document.getElementById("list");
+// 🔥 자동 로그인 체크 추가
+window.addEventListener("DOMContentLoaded", async () => {
+  const res = await fetch("/estimates", {
+    credentials: "include"
+  });
+
+  if (res.ok) {
+    loginSection.classList.add("hidden");
+    adminSection.classList.remove("hidden");
+    loadEstimates();
+  }
+});
+
 const passwordInput = document.getElementById("passwordInput");
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
