@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -22,6 +24,12 @@ app.use(
     credentials: true,
   })
 );
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// admin 폴더 정적 제공
+app.use(express.static(path.join(__dirname, "public")));
 
 /* ==============================
    Supabase 연결
