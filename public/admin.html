@@ -142,6 +142,9 @@ async function loadEstimates() {
       <textarea id="memo-${item.id}">${item.memo || ""}</textarea>
       <br>
       <button onclick="updateEstimate('${item.id}')">저장</button>
+      <button onclick="deleteEstimate('${item.id}')" style="background:red;color:white;">
+삭제
+</button>
       <hr>
     `;
 
@@ -164,6 +167,17 @@ async function updateEstimate(id){
   });
 
   alert("저장 완료");
+}
+async function deleteEstimate(id) {
+  if (!confirm("정말 삭제하시겠습니까?")) return;
+
+  await fetch("/estimates/" + id, {
+    method: "DELETE",
+    credentials: "include"
+  });
+
+  alert("삭제 완료");
+  loadEstimates();
 }
 </script>
 

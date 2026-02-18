@@ -166,6 +166,34 @@ app.put("/estimates/:id", async (req, res) => {
   }
 });
 
+// 견적 삭제
+app.delete("/estimates/:id", async (req, res) => {
+  try {
+    if (req.cookies.admin !== "true") {
+      return res.status(401).json({ ok: false });
+    }
+
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from("estimates")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Delete Error:", error);
+      return res.status(500).json({ ok: false });
+    }
+
+    res.json({ ok: true });
+
+  } catch (err) {
+    console.error("Server Error:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+
 /* ==============================
    서버 시작
 ============================== */
