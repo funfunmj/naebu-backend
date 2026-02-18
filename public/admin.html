@@ -48,21 +48,28 @@ button { cursor: pointer; }
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
 const listDiv = document.getElementById("list");
-// 🔥 자동 로그인 체크 추가
+const passwordInput = document.getElementById("passwordInput");
+
+/* =========================
+   🔥 자동 로그인 체크
+========================= */
 window.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/estimates", {
+  const res = await fetch("/admin/check", {
     credentials: "include"
   });
 
-  if (res.ok) {
+  const data = await res.json();
+
+  if (data.ok) {
     loginSection.classList.add("hidden");
     adminSection.classList.remove("hidden");
     loadEstimates();
   }
 });
 
-const passwordInput = document.getElementById("passwordInput");
-
+/* =========================
+   로그인
+========================= */
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const res = await fetch("/admin/login", {
     method: "POST",
@@ -82,10 +89,21 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-function logout(){
+/* =========================
+   로그아웃
+========================= */
+async function logout(){
+  await fetch("/admin/logout", {
+    method: "POST",
+    credentials: "include"
+  });
+
   location.reload();
 }
 
+/* =========================
+   견적 목록 불러오기
+========================= */
 async function loadEstimates() {
   const res = await fetch("/estimates", {
     credentials: "include"
@@ -112,25 +130,31 @@ async function loadEstimates() {
       <b>내용:</b> ${item.message || ""}<br><br>
 
       <b>상태:</b>
-      <select onchange="updateEstimate('${item.id}')">
+      <select id="status-${item.id}" onchange="updateEstimate('${item.id}')">
         <option value="대기" ${item.status=="대기"?"selected":""}>대기</option>
         <option value="진행중" ${item.status=="진행중"?"selected":""}>진행중</option>
         <option value="완료" ${item.status=="완료"?"selected":""}>완료</option>
       </select>
 
-      <b>메모:</b>
+      <br><br>
+
+      <b>메모:</b><br>
       <textarea id="memo-${item.id}">${item.memo || ""}</textarea>
+      <br>
       <button onclick="updateEstimate('${item.id}')">저장</button>
+      <hr>
     `;
 
     listDiv.appendChild(div);
   });
 }
 
+/* =========================
+   상태 + 메모 업데이트
+========================= */
 async function updateEstimate(id){
   const memo = document.getElementById("memo-"+id).value;
-  const select = document.querySelector(`select[onchange="updateEstimate('${id}')"]`);
-  const status = select.value;
+  const status = document.getElementById("status-"+id).value;
 
   await fetch("/estimates/" + id, {
     method: "PUT",
