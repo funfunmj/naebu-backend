@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import { fileURLToPath } from "url";
+import ExcelJS from "exceljs";
 
 dotenv.config();
 
@@ -189,6 +190,58 @@ app.delete("/estimates/:id", async (req, res) => {
 
   } catch (err) {
     console.error("Server Error:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+app.get("/admin/export", async (req, res) => {
+  try {
+    if (req.cookies.admin !== "true") {
+      return res.status(401).json({ ok: false });
+    }
+
+    const { data, error } = await supabase
+      .from("estimates")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ ok: false });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("견적목록");
+
+    worksheet.columns = [
+      { header: "이름", key: "name", width: 15 },
+      { header: "전화번호", key: "phone", width: 20 },
+      { header: "예산", key: "budget", width: 15 },
+      { header: "공간", key: "space", width: 20 },
+      { header: "내용", key: "message", width: 30 },
+      { header: "상태", key: "status", width: 15 },
+      { header: "메모", key: "memo", width: 30 },
+      { header: "등록일", key: "created_at", width: 20 },
+    ];
+
+    data.forEach(item => {
+      worksheet.addRow(item);
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=estimates.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ ok: false });
   }
 });

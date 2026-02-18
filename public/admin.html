@@ -41,6 +41,7 @@ button { cursor: pointer; }
 <section id="adminSection" class="hidden">
   <h2>문의 목록</h2>
   <button onclick="logout()">로그아웃</button>
+  <button onclick="downloadExcel()">엑셀 다운로드</button>
   <div id="list"></div>
 </section>
 
@@ -179,6 +180,10 @@ async function deleteEstimate(id) {
   alert("삭제 완료");
   loadEstimates();
 }
+function downloadExcel() {
+  window.location.href = "/admin/export";
+}
+
 </script>
 
 </body>
