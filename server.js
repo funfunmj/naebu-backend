@@ -103,7 +103,17 @@ app.post("/estimate", async (req, res) => {
       return res.status(500).json({ ok: false });
     }
 
+    await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: process.env.TELEGRAM_CHAT_ID,
+        text: `📩 신규 문의 도착\n\n이름: ${name}\n전화: ${phone}\n예산: ${budget}`
+      })
+    });
+
     res.json({ ok: true });
+
   } catch (err) {
     console.error("Server Error:", err);
     res.status(500).json({ ok: false });
