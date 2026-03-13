@@ -262,6 +262,26 @@ app.get("/admin/export", async (req, res) => {
   }
 });
 
+/* ==============================
+   서버 핑 (서버 + DB 깨우기)
+============================== */
+
+app.get("/ping", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("estimates")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      return res.status(500).send("db error");
+    }
+
+    res.send("ok");
+  } catch (err) {
+    res.status(500).send("server error");
+  }
+});
 
 /* ==============================
    서버 시작
