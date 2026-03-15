@@ -86,6 +86,9 @@ app.post("/admin/login", (req, res) => {
 
   const { password } = req.body;
 
+  console.log("입력비번:", password);
+  console.log("ENV비번:", process.env.ADMIN_PASSWORD);
+
   if(password === process.env.ADMIN_PASSWORD){
 
     const token = jwt.sign(
@@ -101,7 +104,6 @@ app.post("/admin/login", (req, res) => {
     });
 
     return res.json({ok:true});
-
   }
 
   res.json({ok:false});
