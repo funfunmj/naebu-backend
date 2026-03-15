@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import ExcelJS from "exceljs";
@@ -11,6 +13,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /* ==============================
    기본 설정
@@ -29,7 +32,6 @@ app.use(
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// admin 폴더 정적 제공
 app.use(express.static(path.join(__dirname, "public")));
 
 /* ==============================
@@ -42,48 +44,120 @@ const supabase = createClient(
 );
 
 /* ==============================
+   관리자 인증
+============================== */
+
+function verifyAdmin(req, res, next) {
+
+  const token = req.cookies.admin_token;
+
+  if (!token) {
+    return res.status(401).json({ ok:false });
+  }
+
+  try {
+
+    jwt.verify(token, JWT_SECRET);
+
+    next();
+
+  } catch {
+
+    return res.status(401).json({ ok:false });
+
+  }
+
+}
+
+/* ==============================
+   문의 스팸 방지
+============================== */
+
+const estimateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+});
+
+/* ==============================
    관리자 로그인
 ============================== */
 
 app.post("/admin/login", (req, res) => {
+
   const { password } = req.body;
 
-  if (password === process.env.ADMIN_PASSWORD) {
-    res.cookie("admin", "true", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
+  if(password === process.env.ADMIN_PASSWORD){
+
+    const token = jwt.sign(
+      { role:"admin" },
+      JWT_SECRET,
+      { expiresIn:"12h" }
+    );
+
+    res.cookie("admin_token", token, {
+      httpOnly:true,
+      secure:true,
+      sameSite:"none"
     });
-    return res.json({ ok: true });
+
+    return res.json({ok:true});
+
   }
 
-  res.json({ ok: false });
+  res.json({ok:false});
+
 });
 
-/* 로그인 상태 확인 */
+/* ==============================
+   로그인 상태 확인
+============================== */
+
 app.get("/admin/check", (req, res) => {
-  if (req.cookies.admin === "true") {
-    return res.json({ ok: true });
+
+  const token = req.cookies.admin_token;
+
+  if (!token) {
+    return res.json({ ok:false });
   }
-  res.json({ ok: false });
+
+  try {
+
+    jwt.verify(token, JWT_SECRET);
+
+    res.json({ ok:true });
+
+  } catch {
+
+    res.json({ ok:false });
+
+  }
+
 });
 
-/* 로그아웃 */
+/* ==============================
+   로그아웃
+============================== */
+
 app.post("/admin/logout", (req, res) => {
-  res.clearCookie("admin", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
+
+  res.clearCookie("admin_token", {
+    httpOnly:true,
+    secure:true,
+    sameSite:"none"
   });
-  res.json({ ok: true });
+
+  res.json({ ok:true });
+
 });
 
 /* ==============================
    문의 등록 (홈페이지)
 ============================== */
 
-app.post("/estimate", async (req, res) => {
+app.post("/estimate", estimateLimiter, async (req, res) => {
+
   try {
+
     const { name, phone, budget, space, message } = req.body;
 
     const { error } = await supabase.from("estimates").insert([
@@ -93,77 +167,99 @@ app.post("/estimate", async (req, res) => {
         budget,
         space,
         message,
-        status: "대기",
-        memo: "",
-      },
+        status:"대기",
+        memo:""
+      }
     ]);
 
     if (error) {
       console.error("Insert Error:", error);
-      return res.status(500).json({ ok: false });
+      return res.status(500).json({ ok:false });
     }
 
-  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    chat_id: process.env.TELEGRAM_CHAT_ID,
-    text: `📩 신규 문의 도착
+    /* 텔레그램 알림 */
+
+    await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+
+        chat_id:process.env.TELEGRAM_CHAT_ID,
+
+        text:`📩 신규 문의 도착
 
 이름: ${name}
 전화: ${phone}
 예산: ${budget}
 공간: ${space}
-문의내용: ${message}`
-  })
-});
 
-    res.json({ ok: true });
+문의내용
+${message}`
 
-  } catch (err) {
+      })
+
+    });
+
+    res.json({ ok:true });
+
+  } catch(err){
+
     console.error("Server Error:", err);
-    res.status(500).json({ ok: false });
+
+    res.status(500).json({ ok:false });
+
   }
+
 });
 
 /* ==============================
-   관리자 - 문의 목록 조회
+   관리자 - 문의 목록
 ============================== */
 
-app.get("/estimates", async (req, res) => {
-  try {
-    if (req.cookies.admin !== "true") {
-      return res.status(401).json({ ok: false });
-    }
+app.get("/estimates", verifyAdmin, async (req,res)=>{
+
+  try{
 
     const { data, error } = await supabase
       .from("estimates")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at",{ ascending:false });
 
-    if (error) {
-      console.error("Fetch Error:", error);
-      return res.status(500).json({ ok: false });
+    if(error){
+
+      console.error(error);
+
+      return res.status(500).json({ ok:false });
+
     }
 
     res.json(data);
-  } catch (err) {
-    console.error("Server Error:", err);
-    res.status(500).json({ ok: false });
+
+  }catch(err){
+
+    console.error(err);
+
+    res.status(500).json({ ok:false });
+
   }
+
 });
 
 /* ==============================
-   관리자 - 상태 / 메모 수정
+   관리자 - 상태 수정
 ============================== */
 
-app.put("/estimates/:id", async (req, res) => {
-  try {
-    if (req.cookies.admin !== "true") {
-      return res.status(401).json({ ok: false });
-    }
+app.put("/estimates/:id", verifyAdmin, async (req,res)=>{
+
+  try{
 
     const { id } = req.params;
+
     const { status, memo } = req.body;
 
     const { error } = await supabase
@@ -171,24 +267,33 @@ app.put("/estimates/:id", async (req, res) => {
       .update({ status, memo })
       .eq("id", id);
 
-    if (error) {
-      console.error("Update Error:", error);
-      return res.status(500).json({ ok: false });
+    if(error){
+
+      console.error(error);
+
+      return res.status(500).json({ ok:false });
+
     }
 
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Server Error:", err);
-    res.status(500).json({ ok: false });
+    res.json({ ok:true });
+
+  }catch(err){
+
+    console.error(err);
+
+    res.status(500).json({ ok:false });
+
   }
+
 });
 
-// 견적 삭제
-app.delete("/estimates/:id", async (req, res) => {
-  try {
-    if (req.cookies.admin !== "true") {
-      return res.status(401).json({ ok: false });
-    }
+/* ==============================
+   관리자 - 문의 삭제
+============================== */
+
+app.delete("/estimates/:id", verifyAdmin, async (req,res)=>{
+
+  try{
 
     const { id } = req.params;
 
@@ -197,96 +302,129 @@ app.delete("/estimates/:id", async (req, res) => {
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.error("Delete Error:", error);
-      return res.status(500).json({ ok: false });
+    if(error){
+
+      console.error(error);
+
+      return res.status(500).json({ ok:false });
+
     }
 
-    res.json({ ok: true });
+    res.json({ ok:true });
 
-  } catch (err) {
-    console.error("Server Error:", err);
-    res.status(500).json({ ok: false });
+  }catch(err){
+
+    console.error(err);
+
+    res.status(500).json({ ok:false });
+
   }
+
 });
 
-app.get("/admin/export", async (req, res) => {
-  try {
-    if (req.cookies.admin !== "true") {
-      return res.status(401).json({ ok: false });
-    }
+/* ==============================
+   관리자 - 엑셀 다운로드
+============================== */
+
+app.get("/admin/export", verifyAdmin, async (req,res)=>{
+
+  try{
 
     const { data, error } = await supabase
       .from("estimates")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at",{ ascending:false });
 
-    if (error) {
+    if(error){
+
       console.error(error);
-      return res.status(500).json({ ok: false });
+
+      return res.status(500).json({ ok:false });
+
     }
 
     const workbook = new ExcelJS.Workbook();
+
     const worksheet = workbook.addWorksheet("견적목록");
 
     worksheet.columns = [
-      { header: "이름", key: "name", width: 15 },
-      { header: "전화번호", key: "phone", width: 20 },
-      { header: "예산", key: "budget", width: 15 },
-      { header: "공간", key: "space", width: 20 },
-      { header: "내용", key: "message", width: 30 },
-      { header: "상태", key: "status", width: 15 },
-      { header: "메모", key: "memo", width: 30 },
-      { header: "등록일", key: "created_at", width: 20 },
+
+      { header:"이름", key:"name", width:15 },
+      { header:"전화번호", key:"phone", width:20 },
+      { header:"예산", key:"budget", width:15 },
+      { header:"공간", key:"space", width:20 },
+      { header:"내용", key:"message", width:30 },
+      { header:"상태", key:"status", width:15 },
+      { header:"메모", key:"memo", width:30 },
+      { header:"등록일", key:"created_at", width:20 }
+
     ];
 
-    data.forEach(item => {
+    data.forEach(item=>{
+
       worksheet.addRow(item);
+
     });
 
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
+
     res.setHeader(
       "Content-Disposition",
       "attachment; filename=estimates.xlsx"
     );
 
     await workbook.xlsx.write(res);
+
     res.end();
 
-  } catch (err) {
+  }catch(err){
+
     console.error(err);
-    res.status(500).json({ ok: false });
+
+    res.status(500).json({ ok:false });
+
   }
+
 });
 
 /* ==============================
-   서버 핑 (서버 + DB 깨우기)
+   서버 핑 (DB 깨우기)
 ============================== */
 
-app.get("/ping", async (req, res) => {
-  try {
-    const { data, error } = await supabase
+app.get("/ping", async (req,res)=>{
+
+  try{
+
+    const { error } = await supabase
       .from("estimates")
       .select("id")
       .limit(1);
 
-    if (error) {
+    if(error){
+
       return res.status(500).send("db error");
+
     }
 
     res.send("ok");
-  } catch (err) {
+
+  }catch{
+
     res.status(500).send("server error");
+
   }
+
 });
 
 /* ==============================
    서버 시작
 ============================== */
 
-app.listen(PORT, () => {
+app.listen(PORT, ()=>{
+
   console.log(`Server running on port ${PORT}`);
+
 });
