@@ -45,6 +45,13 @@ button { cursor: pointer; }
   <div id="list"></div>
 </section>
 
+<select id="filterStatus" onchange="loadEstimates()">
+  <option value="">전체</option>
+  <option value="대기">대기</option>
+  <option value="진행중">진행중</option>
+  <option value="완료">완료</option>
+</select>
+
 <script>
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
@@ -106,22 +113,30 @@ async function logout(){
    견적 목록 불러오기
 ========================= */
 async function loadEstimates() {
-  const res = await fetch("/estimates", {
+
+  const status = document.getElementById("filterStatus").value;
+
+  let url = "/estimates";
+  if(status) url += "?status=" + status;
+
+  const res = await fetch(url, {
     credentials: "include"
   });
 
   const data = await res.json();
 
-  if (!Array.isArray(data)) {
-    console.error("배열 아님:", data);
-    return;
-  }
-
   listDiv.innerHTML = "";
 
   data.forEach(item => {
+
+    const color =
+      item.status === "대기" ? "#444" :
+      item.status === "진행중" ? "#2a4d7a" :
+      "#2e7d32";
+
     const div = document.createElement("div");
     div.className = "card";
+    div.style.borderLeft = `5px solid ${color}`;
 
     div.innerHTML = `
       <b>이름:</b> ${item.name}<br>
@@ -140,9 +155,9 @@ async function loadEstimates() {
       <br><br>
 
       <b>메모:</b><br>
-      <textarea id="memo-${item.id}">${item.memo || ""}</textarea>
-      <br>
-      <button onclick="updateEstimate('${item.id}')">저장</button>
+      <textarea id="memo-${item.id}"
+        onblur="autoSave('${item.id}')">${item.memo || ""}</textarea>
+
       <button onclick="deleteEstimate('${item.id}')" style="background:red;color:white;">
 삭제
 </button>
@@ -150,7 +165,9 @@ async function loadEstimates() {
     `;
 
     listDiv.appendChild(div);
+
   });
+
 }
 
 /* =========================
@@ -182,6 +199,18 @@ async function deleteEstimate(id) {
 }
 function downloadExcel() {
   window.location.href = "/admin/export";
+}
+
+async function autoSave(id){
+  const memo = document.getElementById("memo-"+id).value;
+  const status = document.getElementById("status-"+id).value;
+
+  await fetch("/estimates/" + id, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ status, memo })
+  });
 }
 
 </script>
