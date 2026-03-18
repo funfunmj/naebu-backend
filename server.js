@@ -227,31 +227,30 @@ app.get("/estimates", verifyAdmin, async (req,res)=>{
 
   try{
 
-    const { data, error } = await supabase
+    const { status } = req.query;
+
+    let query = supabase
       .from("estimates")
       .select("*")
       .order("created_at",{ ascending:false });
 
+    if(status){
+      query = query.eq("status", status);
+    }
+
+    const { data, error } = await query;
+
     if(error){
-
-      console.error(error);
-
       return res.status(500).json({ ok:false });
-
     }
 
     res.json(data);
 
   }catch(err){
-
-    console.error(err);
-
     res.status(500).json({ ok:false });
-
   }
 
 });
-
 /* ==============================
    관리자 - 상태 수정
 ============================== */
@@ -261,8 +260,14 @@ app.put("/estimates/:id", verifyAdmin, async (req,res)=>{
   try{
 
     const { id } = req.params;
-
     const { status, memo } = req.body;
+
+    // 기존 데이터 가져오기 (변경 전 상태 확인용)
+    const { data: beforeData } = await supabase
+      .from("estimates")
+      .select("*")
+      .eq("id", id)
+      .single();
 
     const { error } = await supabase
       .from("estimates")
@@ -270,10 +275,33 @@ app.put("/estimates/:id", verifyAdmin, async (req,res)=>{
       .eq("id", id);
 
     if(error){
-
       console.error(error);
-
       return res.status(500).json({ ok:false });
+    }
+
+    // 상태가 바뀐 경우만 알림
+    if(beforeData && beforeData.status !== status){
+
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+
+        body:JSON.stringify({
+          chat_id:process.env.TELEGRAM_CHAT_ID,
+          text:`📌 문의 상태 변경
+
+이름: ${beforeData.name}
+전화: ${beforeData.phone}
+
+이전 상태: ${beforeData.status}
+현재 상태: ${status}
+
+메모:
+${memo || "-"}`
+        })
+
+      });
 
     }
 
@@ -282,7 +310,6 @@ app.put("/estimates/:id", verifyAdmin, async (req,res)=>{
   }catch(err){
 
     console.error(err);
-
     res.status(500).json({ ok:false });
 
   }
@@ -391,6 +418,26 @@ app.get("/admin/export", verifyAdmin, async (req,res)=>{
   }
 
 });
+
+/* 🔽🔥 여기 추가 (정확한 위치) */
+app.post("/track/blog-click", async (req, res) => {
+  try {
+    await supabase
+      .from("click_logs")
+      .insert([
+        {
+          type: "blog",
+          created_at: new Date()
+        }
+      ]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "fail" });
+  }
+});
+/* 🔼🔥 여기까지 */
 
 /* ==============================
    서버 핑 (DB 깨우기)
