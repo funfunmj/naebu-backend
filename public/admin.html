@@ -45,6 +45,23 @@ button { cursor: pointer; }
   <div id="list"></div>
 </section>
 
+<!-- 🔽 포트폴리오 업로드 -->
+<div class="card">
+  <h2>포트폴리오 업로드</h2>
+
+  <input id="title" placeholder="제목">
+  <input id="category" placeholder="카테고리">
+  <input id="image_url" placeholder="이미지 URL">
+
+  <button onclick="uploadPortfolio()">업로드</button>
+</div>
+
+<!-- 🔽 포트폴리오 리스트 -->
+<div class="card">
+  <h2>포트폴리오 목록</h2>
+  <div id="portfolio-list"></div>
+</div>
+
 <select id="filterStatus" onchange="loadEstimates()">
   <option value="">전체</option>
   <option value="대기">대기</option>
@@ -68,11 +85,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const data = await res.json();
 
-  if (data.ok) {
-    loginSection.classList.add("hidden");
-    adminSection.classList.remove("hidden");
-    loadEstimates();
-  }
+ if (data.ok) {
+  loginSection.classList.add("hidden");
+  adminSection.classList.remove("hidden");
+  loadEstimates();
+  loadPortfolio(); // 🔥 추가
+}
 });
 
 /* =========================
@@ -213,6 +231,46 @@ async function autoSave(id){
   });
 }
 
+/* =========================
+   포트폴리오 업로드
+========================= */
+async function uploadPortfolio(){
+  const title = document.getElementById("title").value;
+  const category = document.getElementById("category").value;
+  const image_url = document.getElementById("image_url").value;
+
+  await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ title, category, image_url })
+  });
+
+  alert("업로드 완료");
+  loadPortfolio(); // 🔥 업로드 후 새로고침
+}
+
+/* =========================
+   포트폴리오 불러오기
+========================= */
+async function loadPortfolio(){
+  const res = await fetch("https://naebu-backend.onrender.com/portfolio");
+  const data = await res.json();
+
+  const container = document.getElementById("portfolio-list");
+  container.innerHTML = "";
+
+  data.forEach(item => {
+    container.innerHTML += `
+      <div style="margin-bottom:10px;">
+        <img src="${item.image_url}" width="150"><br>
+        <b>${item.title}</b><br>
+        <span>${item.category}</span>
+      </div>
+    `;
+  });
+}
 </script>
 
 </body>
