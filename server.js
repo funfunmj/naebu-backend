@@ -421,24 +421,24 @@ app.get("/admin/export", verifyAdmin, async (req,res)=>{
 
 /* 🔽🔥 여기 추가 (정확한 위치) */
 app.post("/track/blog-click", async (req, res) => {
+  console.log("🔥 클릭 요청 들어옴");
+
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("click_logs")
-      .insert([
-        {
-          type: "blog"
-        }
-      ]);
+      .insert([{ type: "blog" }]);
+
+    console.log("👉 insert 결과 data:", data);
+    console.log("👉 insert 에러 error:", error);
 
     if (error) {
-      console.error("❌ insert error:", error);
       return res.status(500).json({ error });
     }
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ server error:", err);
+    console.error("❌ 서버 에러:", err);
     res.status(500).json({ error: "fail" });
   }
 });
