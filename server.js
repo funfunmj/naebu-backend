@@ -442,7 +442,41 @@ app.post("/track/blog-click", async (req, res) => {
     res.status(500).json({ error: "fail" });
   }
 });
+
 /* 🔼🔥 여기까지 */
+
+/* 🔽🔥 포트폴리오 업로드 API (여기 추가) */
+app.post("/upload/portfolio", async (req, res) => {
+  try {
+    const { title, category, image_url } = req.body;
+
+    console.log("📦 업로드 요청:", title, category, image_url);
+
+    const { data, error } = await supabase
+      .from("portfolio")
+      .insert([{ title, category, image_url }]);
+
+    console.log("👉 insert:", data, error);
+
+    if (error) return res.status(500).json({ error });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "fail" });
+  }
+});
+
+/* 🔽🔥 포트폴리오 조회 API (바로 밑에 추가) */
+app.get("/portfolio", async (req, res) => {
+  const { data, error } = await supabase
+    .from("portfolio")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  res.json(data);
+});
 
 /* ==============================
    서버 핑 (DB 깨우기)
