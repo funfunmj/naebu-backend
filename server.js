@@ -550,7 +550,7 @@ app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) =>
 /* 🔽🔥 HERO 조회 API 추가 */
 app.get("/hero", async (req, res) => {
   const { data, error } = await supabase
-    .from("hero")
+    .from("hero_images") // ✅ 업로드랑 동일하게 맞춤
     .select("*")
     .order("created_at", { ascending: false });
 
