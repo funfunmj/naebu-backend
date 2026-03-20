@@ -50,7 +50,11 @@ button { cursor: pointer; }
   <h2>포트폴리오 업로드</h2>
 
   <input id="title" placeholder="제목">
-  <input id="category" placeholder="카테고리">
+  <select id="category">
+  <option value="주거">주거</option>
+  <option value="상가">상가</option>
+  <option value="사무실">사무실</option>
+</select>
   <input type="file" id="file">
 
   <button onclick="uploadPortfolio()">업로드</button>
@@ -258,6 +262,15 @@ async function uploadPortfolio(){
   alert("업로드 완료");
   loadPortfolio();
 }
+
+<div class="card">
+  <h2>HERO 슬라이드 업로드</h2>
+
+  <input type="file" id="heroFile">
+
+  <button onclick="uploadHero()">업로드</button>
+</div>
+
 /* =========================
    포트폴리오 불러오기
 ========================= */
@@ -278,6 +291,27 @@ async function loadPortfolio(){
     `;
   });
 }
+
+async function uploadHero(){
+  const file = document.getElementById("heroFile").files[0];
+
+  if(!file){
+    alert("파일 선택해라");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  await fetch("/upload/hero", {
+    method: "POST",
+    credentials: "include",
+    body: formData
+  });
+
+  alert("HERO 업로드 완료");
+}
+
 </script>
 
 </body>

@@ -503,6 +503,60 @@ app.get("/portfolio", async (req, res) => {
   res.json(data);
 });
 
+/* 🔽🔥 HERO 업로드 API */
+app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: "파일 없음" });
+    }
+
+    const fileName = Date.now() + "_" + file.originalname;
+
+    // Storage 업로드
+    const { error: uploadError } = await supabase.storage
+      .from("portfolio-images") // 👉 기존 버킷 그대로 사용
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (uploadError) {
+      console.error(uploadError);
+      return res.status(500).json({ error: "업로드 실패" });
+    }
+
+    // URL 생성
+    const image_url = `${process.env.SUPABASE_URL}/storage/v1/object/public/portfolio-images/${fileName}`;
+
+    // DB 저장 (hero_images 테이블)
+    const { error: dbError } = await supabase
+      .from("hero_images")
+      .insert([{ image_url }]);
+
+    if (dbError) {
+      console.error(dbError);
+      return res.status(500).json({ error: "DB 저장 실패" });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+/* 🔽🔥 HERO 조회 API */
+app.get("/hero", async (req, res) => {
+  const { data, error } = await supabase
+    .from("hero_images")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  res.json(data);
+});
+
 /* ==============================
    서버 핑 (DB 깨우기)
 ============================== */
