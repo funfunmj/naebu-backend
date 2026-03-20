@@ -51,7 +51,7 @@ button { cursor: pointer; }
 
   <input id="title" placeholder="제목">
   <input id="category" placeholder="카테고리">
-  <input id="image_url" placeholder="이미지 URL">
+  <input type="file" id="file">
 
   <button onclick="uploadPortfolio()">업로드</button>
 </div>
@@ -237,25 +237,32 @@ async function autoSave(id){
 async function uploadPortfolio(){
   const title = document.getElementById("title").value;
   const category = document.getElementById("category").value;
-  const image_url = document.getElementById("image_url").value;
+  const file = document.getElementById("file").files[0];
 
-  await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
+  if(!file){
+    alert("파일 선택해라");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("title", title);
+  formData.append("category", category);
+  formData.append("file", file); // 🔥 중요
+
+  await fetch("/upload/portfolio", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ title, category, image_url })
+    credentials: "include", // 🔥 관리자 인증 필요
+    body: formData
   });
 
   alert("업로드 완료");
-  loadPortfolio(); // 🔥 업로드 후 새로고침
+  loadPortfolio();
 }
-
 /* =========================
    포트폴리오 불러오기
 ========================= */
 async function loadPortfolio(){
-  const res = await fetch("https://naebu-backend.onrender.com/portfolio");
+  const res = await fetch("/portfolio"); // 🔥 여기 중요
   const data = await res.json();
 
   const container = document.getElementById("portfolio-list");
