@@ -547,16 +547,20 @@ app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) =>
   }
 });
 
-/* 🔽🔥 HERO 조회 API */
+/* 🔽🔥 HERO 조회 API 추가 */
 app.get("/hero", async (req, res) => {
   const { data, error } = await supabase
-    .from("hero_images")
+    .from("hero")
     .select("*")
     .order("created_at", { ascending: false });
 
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: "fail" });
+  }
+
   res.json(data);
 });
-
 /* ==============================
    서버 핑 (DB 깨우기)
 ============================== */

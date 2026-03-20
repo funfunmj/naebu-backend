@@ -66,6 +66,12 @@ button { cursor: pointer; }
   <div id="portfolio-list"></div>
 </div>
 
+<!-- 🔽 HERO 목록 -->
+<div class="card">
+  <h2>HERO 목록</h2>
+  <div id="hero-list"></div>
+</div>
+
 <div class="card">
   <h2>HERO 슬라이드 업로드</h2>
 
@@ -101,7 +107,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   loginSection.classList.add("hidden");
   adminSection.classList.remove("hidden");
   loadEstimates();
-  loadPortfolio(); // 🔥 추가
+  loadPortfolio();
+  loadHero(); // 🔥 여기 딱 추가
 }
 });
 
@@ -235,7 +242,7 @@ async function autoSave(id){
   const memo = document.getElementById("memo-"+id).value;
   const status = document.getElementById("status-"+id).value;
 
-  await fetch("/estimates/" + id, {
+ await fetch("https://naebu-backend.onrender.com/estimates/" + id, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -271,6 +278,24 @@ async function uploadPortfolio(){
   loadPortfolio();
 }
 
+/* =========================
+   HERO 불러오기
+========================= */
+async function loadHero(){
+  const res = await fetch("https://naebu-backend.onrender.com/hero");
+  const data = await res.json();
+
+  const container = document.getElementById("hero-list");
+  container.innerHTML = "";
+
+  data.forEach(item => {
+    container.innerHTML += `
+      <div style="margin-bottom:10px;">
+        <img src="${item.image_url}" width="150"><br>
+      </div>
+    `;
+  });
+}
 
 /* =========================
    포트폴리오 불러오기
