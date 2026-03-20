@@ -66,6 +66,14 @@ button { cursor: pointer; }
   <div id="portfolio-list"></div>
 </div>
 
+<div class="card">
+  <h2>HERO 슬라이드 업로드</h2>
+
+  <input type="file" id="heroFile">
+
+  <button onclick="uploadHero()">업로드</button>
+</div>
+
 <select id="filterStatus" onchange="loadEstimates()">
   <option value="">전체</option>
   <option value="대기">대기</option>
@@ -83,7 +91,7 @@ const passwordInput = document.getElementById("passwordInput");
    🔥 자동 로그인 체크
 ========================= */
 window.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/admin/check", {
+  const res = await fetch("https://naebu-backend.onrender.com/admin/check", {
     credentials: "include"
   });
 
@@ -101,7 +109,7 @@ window.addEventListener("DOMContentLoaded", async () => {
    로그인
 ========================= */
 document.getElementById("loginBtn").addEventListener("click", async () => {
-  const res = await fetch("/admin/login", {
+ const res = await fetch("https://naebu-backend.onrender.com/admin/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -123,7 +131,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
    로그아웃
 ========================= */
 async function logout(){
-  await fetch("/admin/logout", {
+  await fetch("https://naebu-backend.onrender.com/admin/logout", {
     method: "POST",
     credentials: "include"
   });
@@ -138,7 +146,7 @@ async function loadEstimates() {
 
   const status = document.getElementById("filterStatus").value;
 
-  let url = "/estimates";
+  let url = "https://naebu-backend.onrender.com/estimates";
   if(status) url += "?status=" + status;
 
   const res = await fetch(url, {
@@ -199,7 +207,7 @@ async function updateEstimate(id){
   const memo = document.getElementById("memo-"+id).value;
   const status = document.getElementById("status-"+id).value;
 
-  await fetch("/estimates/" + id, {
+  await fetch("https://naebu-backend.onrender.com/estimates/" + id, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -211,7 +219,7 @@ async function updateEstimate(id){
 async function deleteEstimate(id) {
   if (!confirm("정말 삭제하시겠습니까?")) return;
 
-  await fetch("/estimates/" + id, {
+ await fetch("https://naebu-backend.onrender.com/estimates/" + id, {
     method: "DELETE",
     credentials: "include"
   });
@@ -220,7 +228,7 @@ async function deleteEstimate(id) {
   loadEstimates();
 }
 function downloadExcel() {
-  window.location.href = "/admin/export";
+ window.location.href = "https://naebu-backend.onrender.com/admin/export";
 }
 
 async function autoSave(id){
@@ -253,7 +261,7 @@ async function uploadPortfolio(){
   formData.append("category", category);
   formData.append("file", file); // 🔥 중요
 
-  await fetch("/upload/portfolio", {
+  await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
     method: "POST",
     credentials: "include", // 🔥 관리자 인증 필요
     body: formData
@@ -263,19 +271,12 @@ async function uploadPortfolio(){
   loadPortfolio();
 }
 
-<div class="card">
-  <h2>HERO 슬라이드 업로드</h2>
-
-  <input type="file" id="heroFile">
-
-  <button onclick="uploadHero()">업로드</button>
-</div>
 
 /* =========================
    포트폴리오 불러오기
 ========================= */
 async function loadPortfolio(){
-  const res = await fetch("/portfolio"); // 🔥 여기 중요
+  const res = await fetch("https://naebu-backend.onrender.com/portfolio"); // 🔥 여기 중요
   const data = await res.json();
 
   const container = document.getElementById("portfolio-list");
@@ -303,7 +304,7 @@ async function uploadHero(){
   const formData = new FormData();
   formData.append("file", file);
 
-  await fetch("/upload/hero", {
+   await fetch("https://naebu-backend.onrender.com/upload/hero", {
     method: "POST",
     credentials: "include",
     body: formData
