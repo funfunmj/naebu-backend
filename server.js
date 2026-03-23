@@ -448,18 +448,22 @@ app.post("/track/blog-click", async (req, res) => {
 
 /* 🔼🔥 여기까지 */
 
-app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, res) => {
+app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) => {
   try {
-    const { title, category } = req.body;
+    console.log("🔥 HERO 업로드 시작");
+
     const file = req.file;
 
     if (!file) {
+      console.log("❌ 파일 없음");
       return res.status(400).json({ error: "파일 없음" });
     }
 
     const fileName = Date.now() + "_" + file.originalname;
 
-    // 🔥 Supabase Storage 업로드
+    console.log("파일명:", fileName);
+
+    // Storage 업로드
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
       .upload(fileName, file.buffer, {
@@ -467,31 +471,33 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
       });
 
     if (uploadError) {
-      console.error(uploadError);
+      console.error("❌ Storage 에러:", uploadError);
       return res.status(500).json({ error: "업로드 실패" });
     }
 
-    // 🔥 URL 생성
     const image_url = `${process.env.SUPABASE_URL}/storage/v1/object/public/portfolio-images/${fileName}`;
 
-    // 🔥 DB 저장
+    console.log("이미지 URL:", image_url);
+
+    // DB 저장
     const { error: dbError } = await supabase
-      .from("portfolio")
-      .insert([{ title, category, image_url }]);
+      .from("hero_images")
+      .insert([{ image_url }]);
 
     if (dbError) {
-      console.error(dbError);
+      console.error("❌ DB 에러:", dbError);
       return res.status(500).json({ error: "DB 저장 실패" });
     }
+
+    console.log("✅ HERO 업로드 성공");
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ 서버 에러:", err);
     res.status(500).json({ error: "서버 오류" });
   }
 });
-
 
 /* 🔽🔥 포트폴리오 조회 API (바로 밑에 추가) */
 app.get("/portfolio", async (req, res) => {
@@ -526,6 +532,9 @@ app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) =>
       return res.status(500).json({ error: "업로드 실패" });
     }
 
+if (!file.mimetype.startsWith("image/")) {
+  return res.status(400).json({ error: "이미지 파일만 가능" });
+}
     // URL 생성
     const image_url = `${process.env.SUPABASE_URL}/storage/v1/object/public/portfolio-images/${fileName}`;
 
