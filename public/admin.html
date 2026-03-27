@@ -289,30 +289,37 @@ async function loadHero(){
   container.innerHTML = "";
 
   data.forEach(item => {
+
+    // 🔥 이미지 없는 데이터 걸러내기
+    if(!item.image_url) return;
+
     container.innerHTML += `
       <div style="margin-bottom:10px;">
-        <img src="${item.image_url}" width="150"><br>
+        <img src="${item.image_url}" width="150">
       </div>
     `;
   });
 }
-
 /* =========================
    포트폴리오 불러오기
 ========================= */
 async function loadPortfolio(){
-  const res = await fetch("https://naebu-backend.onrender.com/portfolio"); // 🔥 여기 중요
+  const res = await fetch("https://naebu-backend.onrender.com/portfolio");
   const data = await res.json();
 
   const container = document.getElementById("portfolio-list");
   container.innerHTML = "";
 
   data.forEach(item => {
+
+    // 🔥 핵심 (이거 없으면 또 터짐)
+    if(!item.image_url) return;
+
     container.innerHTML += `
       <div style="margin-bottom:10px;">
         <img src="${item.image_url}" width="150"><br>
-        <b>${item.title}</b><br>
-        <span>${item.category}</span>
+        <b>${item.title || ""}</b><br>
+        <span>${item.category || ""}</span>
       </div>
     `;
   });
