@@ -103,12 +103,13 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const data = await res.json();
 
- if (data.ok) {
+if (data.ok) {
   loginSection.classList.add("hidden");
   adminSection.classList.remove("hidden");
+
   loadEstimates();
-  loadPortfolio();
-  loadHero(); // 🔥 여기 딱 추가
+  loadPortfolio();   // 🔥 추가
+  loadHero();        // 🔥 추가
 }
 });
 
@@ -342,7 +343,8 @@ async function uploadHero(){
     body: formData
   });
 
-  alert("HERO 업로드 완료");
+ alert("HERO 업로드 완료");
+loadHero();   // 🔥 추가
 }
 
 </script>
