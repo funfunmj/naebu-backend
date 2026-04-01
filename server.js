@@ -505,6 +505,54 @@ app.get("/portfolio", verifyAdmin, async (req, res) => {
   res.json(data);
 });
 
+/* 🔥 포트폴리오 삭제 */
+app.delete("/portfolio/:id", verifyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1️⃣ DB에서 이미지 URL 가져오기
+    const { data, error: fetchError } = await supabase
+      .from("portfolio")
+      .select("image_url")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      return res.status(500).json({ error: "조회 실패" });
+    }
+
+    const imageUrl = data.image_url;
+
+    // 🔥 여기 수정 (핵심)
+    const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
+
+    // 🔥 에러 체크 추가
+    const { error: storageError } = await supabase.storage
+      .from("portfolio-images")
+      .remove([fileName]);
+
+    if (storageError) {
+      console.error("스토리지 삭제 실패:", storageError);
+    }
+
+    // 4️⃣ DB 삭제
+    const { error: deleteError } = await supabase
+      .from("portfolio")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      return res.status(500).json({ error: "삭제 실패" });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 /* 🔽🔥 HERO 업로드 API */
 app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) => {
   try {
