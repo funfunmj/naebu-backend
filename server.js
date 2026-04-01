@@ -619,6 +619,55 @@ app.get("/hero", verifyAdmin, async (req, res) => {
 
   res.json(data);
 });
+
+/* 🔥 HERO 삭제 */
+app.delete("/hero/:id", verifyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1️⃣ DB에서 이미지 URL 가져오기
+    const { data, error: fetchError } = await supabase
+      .from("hero_images")
+      .select("image_url")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      return res.status(500).json({ error: "조회 실패" });
+    }
+
+    const imageUrl = data.image_url;
+
+    // 🔥 파일 경로 정확히 추출
+    const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
+
+    // 2️⃣ Storage 삭제
+    const { error: storageError } = await supabase.storage
+      .from("portfolio-images")
+      .remove([fileName]);
+
+    if (storageError) {
+      console.error("스토리지 삭제 실패:", storageError);
+    }
+
+    // 3️⃣ DB 삭제
+    const { error: deleteError } = await supabase
+      .from("hero_images")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      return res.status(500).json({ error: "삭제 실패" });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 /* ==============================
    서버 핑 (DB 깨우기)
 ============================== */

@@ -304,11 +304,16 @@ async function loadHero(){
     // 🔥 이미지 없는 데이터 걸러내기
     if(!item.image_url) return;
 
-    container.innerHTML += `
-      <div style="margin-bottom:10px;">
-        <img src="${item.image_url}" width="150">
-      </div>
-    `;
+   container.innerHTML += `
+  <div style="margin-bottom:10px;">
+    <img src="${item.image_url}" width="150"><br>
+
+    <button onclick="deleteHero('${item.id}')"
+      style="background:red;color:white;">
+      삭제
+    </button>
+  </div>
+`;
   });
 }
 /* =========================
