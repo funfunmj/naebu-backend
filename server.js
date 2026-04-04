@@ -446,16 +446,18 @@ app.post("/track/blog-click", async (req, res) => {
   }
 });
 
-app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, res) => {
+app.post("/upload/portfolio", verifyAdmin, upload.fields([
+  { name: "thumb", maxCount: 1 },
+  { name: "original", maxCount: 1 }
+]), async (req, res) => {
   try {
-    const file = req.file;
-    const { title, category } = req.body;
-    console.log("🔥 받은 데이터:", { title, category });
+  const thumb = req.files["thumb"]?.[0];
+const original = req.files["original"]?.[0];
 
-    if (!file) {
-      return res.status(400).json({ error: "파일 없음" });
-    }
-   const fileName = Date.now() + "_" + file.originalname;
+if (!thumb || !original) {
+  return res.status(400).json({ error: "파일 없음" });
+}
+  const fileName = Date.now() + "_" + original.originalname;
 
     if (!file.mimetype.startsWith("image/")) {
       return res.status(400).json({ error: "이미지 파일만 가능" });
@@ -463,9 +465,9 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-      });
+   .upload(fileName, original.buffer, {
+  contentType: original.mimetype,
+});
 
     if (uploadError) {
       console.error(uploadError);
