@@ -480,7 +480,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const { error: dbError } = await supabase
       .from("portfolio")
-      .insert([{ title, category, image_url }]);
+      .insert([{ title, image_url }]);
 
     if (dbError) {
       console.error(dbError);
