@@ -451,23 +451,26 @@ app.post("/upload/portfolio", verifyAdmin, upload.fields([
   { name: "original", maxCount: 1 }
 ]), async (req, res) => {
   try {
-  const thumb = req.files["thumb"]?.[0];
-const original = req.files["original"]?.[0];
+    const { title, category } = req.body;
 
-if (!thumb || !original) {
-  return res.status(400).json({ error: "파일 없음" });
-}
-  const fileName = Date.now() + "_" + original.originalname;
+    const thumb = req.files["thumb"]?.[0];
+    const original = req.files["original"]?.[0];
 
-    if (!file.mimetype.startsWith("image/")) {
+    if (!thumb || !original) {
+      return res.status(400).json({ error: "파일 없음" });
+    }
+
+    if (!original.mimetype.startsWith("image/")) {
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
 
+    const fileName = Date.now() + "_" + original.originalname;
+
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
-   .upload(fileName, original.buffer, {
-  contentType: original.mimetype,
-});
+      .upload(fileName, original.buffer, {
+        contentType: original.mimetype,
+      });
 
     if (uploadError) {
       console.error(uploadError);
@@ -480,19 +483,13 @@ if (!thumb || !original) {
 
     const image_url = publicUrlData.publicUrl;
 
-const { error: dbError } = await supabase
-  .from("portfolio")
-  .insert([{ title, category, image_url }]);
-
-if (dbError) {
-  console.error("🔥 DB 에러:", dbError);
-  return res.status(500).json({ error: dbError.message });
-}
-
+    const { error: dbError } = await supabase
+      .from("portfolio")
+      .insert([{ title, category, image_url }]);
 
     if (dbError) {
-      console.error(dbError);
-      return res.status(500).json({ error: "DB 저장 실패" });
+      console.error("🔥 DB 에러:", dbError);
+      return res.status(500).json({ error: dbError.message });
     }
 
     res.json({ success: true });
