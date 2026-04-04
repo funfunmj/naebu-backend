@@ -276,22 +276,28 @@ async function uploadPortfolio(){
     formData.append("thumb", thumb);
     formData.append("original", original);
 
-const res = await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
-  method: "POST",
-  credentials: "include",
-  body: formData
-});
+   const res = await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    });
 
-const data = await res.json();
+    const data = await res.json();
 
-if (!res.ok) {
-  alert("❌ 업로드 실패: " + data.error);
-  console.error("서버 에러:", data);
-  return;
+    if (!res.ok) {
+      alert("❌ 업로드 실패: " + data.error);
+      console.error("서버 에러:", data);
+      return;
+    }
+
+    alert("✅ 업로드 완료");
+    loadPortfolio();
+
+  } catch (err) {
+    alert("❌ 업로드 실패");
+    console.error(err);
+  }
 }
-
-alert("✅ 업로드 완료");
-loadPortfolio();
 
 /* =========================
    HERO 불러오기
