@@ -450,7 +450,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
   try {
     const file = req.file;
     const { title, category } = req.body;
-
+    console.log("🔥 받은 데이터:", { title, category });
 
     if (!file) {
       return res.status(400).json({ error: "파일 없음" });
@@ -478,9 +478,15 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const image_url = publicUrlData.publicUrl;
 
-    const { error: dbError } = await supabase
-      .from("portfolio")
-      .insert([{ title, image_url }]);
+const { error: dbError } = await supabase
+  .from("portfolio")
+  .insert([{ title, category, image_url }]);
+
+if (dbError) {
+  console.error("🔥 DB 에러:", dbError);
+  return res.status(500).json({ error: dbError.message });
+}
+
 
     if (dbError) {
       console.error(dbError);
