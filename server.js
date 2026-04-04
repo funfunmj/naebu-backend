@@ -449,7 +449,7 @@ app.post("/track/blog-click", async (req, res) => {
 app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
-   const { title, category } = req.body;
+    const { title, category } = req.body;
 
 
     if (!file) {
@@ -460,6 +460,8 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
     if (!file.mimetype.startsWith("image/")) {
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
+
+    const fileName = Date.now() + "_" + file.originalname;
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
