@@ -274,7 +274,7 @@ async function uploadPortfolio(){
     formData.append("title", title);
     formData.append("category", category);
     formData.append("thumb", thumb);
-    formData.append("original", original);
+    formData.append("file", original);
 
    const res = await fetch("https://naebu-backend.onrender.com/upload/portfolio", {
       method: "POST",
