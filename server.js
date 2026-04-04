@@ -460,7 +460,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
 
-  const fileName = Date.now() + "_" + Math.random().toString(36).substring(2) + "_" + file.originalname;
+   const fileName = Date.now() + "_" + file.originalname;
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
@@ -529,7 +529,7 @@ app.delete("/portfolio/:id", verifyAdmin, async (req, res) => {
     const imageUrl = data.image_url;
 
     // 🔥 여기 수정 (핵심)
- const fileName = imageUrl.split("/").pop();
+ const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
 
     // 🔥 에러 체크 추가
     const { error: storageError } = await supabase.storage
@@ -567,7 +567,7 @@ app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) =>
       return res.status(400).json({ error: "파일 없음" });
     }
 
-const fileName = Date.now() + "_" + Math.random().toString(36).substring(2) + "_" + file.originalname;
+const fileName = Date.now() + "_" + file.originalname;
 
 if (!file.mimetype.startsWith("image/")) {
   return res.status(400).json({ error: "이미지 파일만 가능" });
@@ -644,7 +644,7 @@ app.delete("/hero/:id", verifyAdmin, async (req, res) => {
     const imageUrl = data.image_url;
 
     // 🔥 파일 경로 정확히 추출
-    const fileName = imageUrl.split("/").pop();
+ const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
 
     // 2️⃣ Storage 삭제
     const { error: storageError } = await supabase.storage
