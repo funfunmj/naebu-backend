@@ -461,8 +461,6 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
 
-    const fileName = Date.now() + "_" + file.originalname;
-
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
       .upload(fileName, file.buffer, {
