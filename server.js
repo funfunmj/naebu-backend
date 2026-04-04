@@ -481,7 +481,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const { error: dbError } = await supabase
       .from("portfolio")
-      .insert([{ title, category, image_url }]);
+      .insert([{ title, image_url }]);
 
     if (dbError) {
       console.error(dbError);
@@ -497,7 +497,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 });
 
 /* 🔽🔥 포트폴리오 조회 API (바로 밑에 추가) */
-app.get("/portfolio", async (req, res) => {
+app.get("/portfolio", verifyAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from("portfolio")
     .select("*")
