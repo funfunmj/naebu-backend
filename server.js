@@ -449,7 +449,7 @@ app.post("/track/blog-click", async (req, res) => {
 app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
-   const { title, category } = req.body;
+    const { title } = req.body;
 
     if (!file) {
       return res.status(400).json({ error: "파일 없음" });
@@ -459,7 +459,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
 
-  const fileName = Date.now() + "_" + Math.random().toString(36).substring(2) + "_" + file.originalname;
+    const fileName = Date.now() + "_" + file.originalname;
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
@@ -480,7 +480,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const { error: dbError } = await supabase
       .from("portfolio")
-      .insert([{ title, category, image_url }]);
+      .insert([{ title, image_url }]);
 
     if (dbError) {
       console.error(dbError);
@@ -496,16 +496,12 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 });
 
 /* 🔽🔥 포트폴리오 조회 API (바로 밑에 추가) */
-app.get("/portfolio", async (req, res) => {
+app.get("/portfolio", verifyAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from("portfolio")
     .select("*")
     .order("created_at", { ascending: false });
 
-if (error) {
-  console.error(error);
-  return res.status(500).json({ error: "fail" });
-}
   res.json(data);
 });
 
@@ -528,7 +524,7 @@ app.delete("/portfolio/:id", verifyAdmin, async (req, res) => {
     const imageUrl = data.image_url;
 
     // 🔥 여기 수정 (핵심)
- const fileName = imageUrl.split("/").pop();
+    const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
 
     // 🔥 에러 체크 추가
     const { error: storageError } = await supabase.storage
@@ -566,7 +562,7 @@ app.post("/upload/hero", verifyAdmin, upload.single("file"), async (req, res) =>
       return res.status(400).json({ error: "파일 없음" });
     }
 
-const fileName = Date.now() + "_" + Math.random().toString(36).substring(2) + "_" + file.originalname;
+    const fileName = Date.now() + "_" + file.originalname;
 
 if (!file.mimetype.startsWith("image/")) {
   return res.status(400).json({ error: "이미지 파일만 가능" });
@@ -610,7 +606,7 @@ const image_url = publicUrlData.publicUrl;
 });
 
 /* 🔽🔥 HERO 조회 API 추가 */
-app.get("/hero", async (req, res) => {
+app.get("/hero", verifyAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from("hero_images") // ✅ 업로드랑 동일하게 맞춤
     .select("*")
@@ -643,7 +639,7 @@ app.delete("/hero/:id", verifyAdmin, async (req, res) => {
     const imageUrl = data.image_url;
 
     // 🔥 파일 경로 정확히 추출
-    const fileName = imageUrl.split("/").pop();
+    const fileName = imageUrl.split("/storage/v1/object/public/portfolio-images/")[1];
 
     // 2️⃣ Storage 삭제
     const { error: storageError } = await supabase.storage
