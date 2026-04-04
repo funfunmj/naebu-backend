@@ -455,12 +455,11 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
     if (!file) {
       return res.status(400).json({ error: "파일 없음" });
     }
+   const fileName = Date.now() + "_" + file.originalname;
 
     if (!file.mimetype.startsWith("image/")) {
       return res.status(400).json({ error: "이미지 파일만 가능" });
     }
-
-   const fileName = Date.now() + "_" + file.originalname;
 
     const { error: uploadError } = await supabase.storage
       .from("portfolio-images")
@@ -481,7 +480,7 @@ app.post("/upload/portfolio", verifyAdmin, upload.single("file"), async (req, re
 
     const { error: dbError } = await supabase
       .from("portfolio")
-      .insert([{ title, image_url }]);
+      .insert([{ title, category, image_url }]);
 
     if (dbError) {
       console.error(dbError);
